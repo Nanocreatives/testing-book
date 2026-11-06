@@ -36,15 +36,15 @@ export default function (sequelize) {
         return res.status(404).send('Project not found');
       }
 
-      // Deux branches `hasMany` dans UNE requête produisent un produit
-      // cartésien : folders × cases × runs × runCases. Sur un projet d'un
-      // millier de cas et neuf campagnes, c'est le million de lignes — chacune
-      // portant le texte complet du cas — et le processus meurt sur « heap out
-      // of memory » sans jamais répondre.
+      // Two `hasMany` branches in ONE query make Sequelize emit a cartesian
+      // product: folders x cases x runs x runCases. On a project with ~1000
+      // cases and 9 runs that is roughly a million rows, each one carrying the
+      // full case text — the request never returns and the process dies with
+      // "JavaScript heap out of memory".
       //
-      // Deux requêtes séparées, chacune avec un seul join, et seulement les
-      // colonnes que la page agrège réellement : les compteurs, le type et la
-      // priorité des cas, le statut et la date des rattachements.
+      // Two separate queries, one join each, and only the columns the page
+      // actually aggregates (see aggregate.ts: counts, case type and priority,
+      // run case status and createdAt). The JSON shape is unchanged.
       const [folders, runs] = await Promise.all([
         Folder.findAll({
           where: { projectId },
