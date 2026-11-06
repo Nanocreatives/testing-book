@@ -1,9 +1,14 @@
-# focus-tcms — ce que ce fork ajoute à unittcms
+# testing-book — ce que ce fork ajoute à unittcms
 
-Fork de [`kimatata/unittcms`](https://github.com/kimatata/unittcms) (GPL-3.0),
-déployé pour la **recette manuelle de la suite Focus**. Il sert à une personne
-qui n'est pas développeuse et qui n'a pas de compte GitHub : elle y joue les cas
-et y coche ce qu'elle a vu.
+Fork de [`kimatata/unittcms`](https://github.com/kimatata/unittcms) (GPL-3.0).
+Un outil de **recette manuelle**, destiné aux personnes qui exécutent les tests
+sans être développeuses et sans compte GitHub : elles y jouent les cas et y
+cochent ce qu'elles ont vu.
+
+L'outil n'est lié à aucun projet. **Sa première campagne est la recette de la
+suite Focus**, et c'est elle qui a dicté les choix décrits ici — mais rien
+n'empêche d'y importer les cas d'un autre produit : il suffit d'un fichier au
+format de `scripts/import-focus-qa.mjs`.
 
 **Ce fichier est séparé du `README.md` de l'amont exprès** — pour qu'une
 synchronisation avec `kimatata/unittcms` ne produise pas de conflit.
@@ -32,7 +37,7 @@ cd ../focus-qa && node scripts/export-cases.mjs
 ```
 
 ```bash
-node scripts/import-focus-qa.mjs --owner-email=<compte existant de focus-tcms>
+node scripts/import-focus-qa.mjs --owner-email=<compte existant de testing-book>
 ```
 
 L'import est **idempotent** : relancer met à jour les énoncés, les priorités et
@@ -42,14 +47,14 @@ l'application. `--dry-run` montre ce qui serait fait.
 
 ## Comment les 1020 cas sont rangés
 
-| Dans focus-qa | Dans focus-tcms |
-|---|---|
-| le projet entier | **Project** « Focus — Recette finale » |
-| un plan (`10-paie.md`) | **Folder** de premier niveau, `10 — Paie · /hr/payroll` |
-| une section (`CLC`) | **Folder** imbriqué, `CLC — Le calcul` |
-| un cas (`CLC-04`) | **Case** `CLC-04 — IRPP — barème par tranches…` |
-| une vague de `docs/campagne.md` | **Run**, `Vague 5 — La paie` |
-| le statut staging du cas | **RunCase.status** dans la campagne de sa vague |
+| Dans focus-qa                   | Dans testing-book                                       |
+| ------------------------------- | ------------------------------------------------------- |
+| le projet entier                | **Project** « Focus — Recette finale »                  |
+| un plan (`10-paie.md`)          | **Folder** de premier niveau, `10 — Paie · /hr/payroll` |
+| une section (`CLC`)             | **Folder** imbriqué, `CLC — Le calcul`                  |
+| un cas (`CLC-04`)               | **Case** `CLC-04 — IRPP — barème par tranches…`         |
+| une vague de `docs/campagne.md` | **Run**, `Vague 5 — La paie`                            |
+| le statut staging du cas        | **RunCase.status** dans la campagne de sa vague         |
 
 **Les neuf campagnes portent l'ordre de jeu.** On ne joue pas la paie avant les
 contrats : la vague 5 présuppose ce que la vague 3 a produit. L'ordre et son
@@ -63,11 +68,11 @@ de leurs tableaux** — l'index EST la valeur stockée. Les réordonner côté a
 casserait l'import en silence : relire ce fichier avant de toucher aux constantes
 de `scripts/import-focus-qa.mjs`.
 
-| | |
-|---|---|
+|              |                                                                                                                                   |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------- |
 | **Priorité** | `critical` si le cas porte 🔒 cloisonnement, 💱 calcul ou ⚠️ défaut connu ; sinon `high`/`medium`/`low` selon la priorité du plan |
-| **Type** | 🔒 → `security`, 💱 → `functional`, 📱 → `compatibility`, sinon `acceptance` |
-| **Statut** | ⬜ `untested` · 🟢 `passed` · 🔴 `failed` · 🟠 `retest` · ⚪ ⛔ `skipped` |
+| **Type**     | 🔒 → `security`, 💱 → `functional`, 📱 → `compatibility`, sinon `acceptance`                                                      |
+| **Statut**   | ⬜ `untested` · 🟢 `passed` · 🔴 `failed` · 🟠 `retest` · ⚪ ⛔ `skipped`                                                         |
 
 La priorité ne vient **pas** de celle du plan seule : la reporter telle quelle
 mettait 980 cas sur 1020 en `critical`, et une priorité que presque tout porte ne
@@ -77,11 +82,11 @@ trie plus rien.
 
 L'amont en fournit trois, et ils suffisent :
 
-| | |
-|---|---|
-| **manager** | voit tout, assigne, crée les campagnes — le pilote de la recette |
-| **developer** | conçoit et corrige les cas — nous, quand un énoncé est faux |
-| **reporter** | **exécute et coche** — la personne qui joue la recette |
+|               |                                                                  |
+| ------------- | ---------------------------------------------------------------- |
+| **manager**   | voit tout, assigne, crée les campagnes — le pilote de la recette |
+| **developer** | conçoit et corrige les cas — nous, quand un énoncé est faux      |
+| **reporter**  | **exécute et coche** — la personne qui joue la recette           |
 
 `RunCase` porte `assigneeUserId` : c'est ce qui répond à « qui fait, qui ne fait
 pas ».
@@ -117,9 +122,41 @@ désormais le bon format.
 
 **Les dossiers.** Un plan sans sections (00, 02, 07, 08) recevait un
 sous-dossier portant **le nom exact de son parent** — et le tableau d'une
-campagne ne montre que les cas placés *directement* dans le dossier
+campagne ne montre que les cas placés _directement_ dans le dossier
 sélectionné : les cas devenaient invisibles. Ces plans rangent maintenant leurs
 cas dans le dossier du plan.
+
+## Déployer
+
+Un seul conteneur, un volume, aucune URL absolue dans le code — le frontend
+appelle l'API en `/api`, même origine. **Changer de nom de domaine ne demande
+donc ni rebuild ni migration.**
+
+### Sur Coolify
+
+1. Nouvelle ressource → **Docker Compose**, source = ce dépôt, branche `main`.
+   Le `docker-compose.yaml` est à la racine, rien à adapter.
+2. Variables : **`SECRET_KEY`** (une valeur aléatoire), et
+   `FRONTEND_ORIGIN=https://<ton-sous-domaine>`.
+3. Vérifier que le volume **`db-data`** est bien persistant — c'est la base
+   entière. Le second montage sert aux pièces jointes.
+4. Port exposé : **8000**.
+
+### Le nom de domaine, gratuitement
+
+Un compte **[DuckDNS](https://www.duckdns.org)** donne cinq sous-domaines
+`*.duckdns.org`. On en crée un, on le pointe sur l'IP du serveur Coolify, et on
+le déclare comme domaine du service.
+
+**HTTPS fonctionne** : pour un hôte unique, Traefik obtient son certificat par
+la validation HTTP-01, qui sert un fichier sur le port 80 — il suffit que ce
+port soit ouvert. Aucune configuration DNS supplémentaire n'est nécessaire ; la
+validation DNS-01 ne sert que pour un certificat _wildcard_.
+
+⚠️ **Ne pas utiliser le domaine `sslip.io` que Coolify génère par défaut.** Il
+fonctionne, mais **reste en HTTP** : Let's Encrypt limite le débit sur la zone
+`sslip.io` partagée et la délivrance échoue. Or la première chose que fait un
+testeur sur cet outil, c'est taper un mot de passe.
 
 ## Développer localement
 
