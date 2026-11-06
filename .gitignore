@@ -11,3 +11,9 @@ database.sqlite
 /.idea/
 .claude/
 openspec/
+node_modules/
+backend/database/
+.local-credentials
+backend/.env
+frontend/.env.local
+.claude/
