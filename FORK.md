@@ -145,6 +145,7 @@ donc ni rebuild ni migration.**
    ignorée, et l'instance signait ses jetons avec une chaîne publiée dans un
    dépôt public. Ici la variable est obligatoire — sans elle, **le déploiement
    échoue au lieu de démarrer une instance ouverte à la forge de jetons**.
+
 3. Vérifier que les deux volumes **`db-data`** et **`uploads-data`** sont bien
    persistants : la base, et les pièces jointes.
 
@@ -152,6 +153,7 @@ donc ni rebuild ni migration.**
    Sur une plateforme qui reclone à chaque déploiement, le dossier revient vide
    — et une capture d'écran jointe à un constat, c'est la preuve du défaut.
    C'est un volume nommé ici.
+
 4. Port exposé : **8000**.
 
 ### Le nom de domaine, gratuitement
