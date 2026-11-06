@@ -31,19 +31,34 @@ export default function (sequelize) {
     }
 
     try {
-      const project = await Project.findByPk(projectId, {
-        include: [
-          {
-            model: Folder,
-            include: [{ model: Case }],
-          },
-          { model: Run, include: [{ model: RunCase }] },
-        ],
-      });
+      const project = await Project.findByPk(projectId);
       if (!project) {
         return res.status(404).send('Project not found');
       }
-      res.json(project);
+
+      // Deux branches `hasMany` dans UNE requête produisent un produit
+      // cartésien : folders × cases × runs × runCases. Sur un projet d'un
+      // millier de cas et neuf campagnes, c'est le million de lignes — chacune
+      // portant le texte complet du cas — et le processus meurt sur « heap out
+      // of memory » sans jamais répondre.
+      //
+      // Deux requêtes séparées, chacune avec un seul join, et seulement les
+      // colonnes que la page agrège réellement : les compteurs, le type et la
+      // priorité des cas, le statut et la date des rattachements.
+      const [folders, runs] = await Promise.all([
+        Folder.findAll({
+          where: { projectId },
+          attributes: ['id'],
+          include: [{ model: Case, attributes: ['id', 'type', 'priority'] }],
+        }),
+        Run.findAll({
+          where: { projectId },
+          attributes: ['id'],
+          include: [{ model: RunCase, attributes: ['id', 'status', 'createdAt'] }],
+        }),
+      ]);
+
+      res.json({ ...project.toJSON(), Folders: folders, Runs: runs });
     } catch (error) {
       console.error(error);
       res.status(500).send('Internal Server Error');
