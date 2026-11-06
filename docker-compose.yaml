@@ -9,13 +9,23 @@ services:
       - '8000:8000'
     environment:
       - PORT=8000
-      - SECRET_KEY=your_secret_key_here
+      # The signing key for session tokens. It MUST come from the environment:
+      # the upstream compose hard-codes a placeholder, which silently overrides
+      # anything the host sets — and that placeholder is published in a public
+      # repository, so anyone can forge a token for any account.
+      # `:?` fails the deploy instead of starting an insecure instance.
+      - SECRET_KEY=${SECRET_KEY:?SECRET_KEY must be set (generate a random value)}
       - IS_DEMO=false # set to true to seed the database
       - API_PATH=${API_PATH:-/api}
       - FRONTEND_ORIGIN=${FRONTEND_ORIGIN:-http://localhost:8000}
     volumes:
       - db-data:/app/backend/database
-      - ./backend/public/uploads:/app/backend/public/uploads
+      # A named volume, not a bind mount on the cloned repository: platforms
+      # that re-clone on each deploy (Coolify without "preserve repository")
+      # would hand back an empty directory, losing every attachment — which is
+      # the evidence a tester files with a defect.
+      - uploads-data:/app/backend/public/uploads
 
 volumes:
   db-data:
+  uploads-data:

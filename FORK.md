@@ -136,10 +136,22 @@ donc ni rebuild ni migration.**
 
 1. Nouvelle ressource → **Docker Compose**, source = ce dépôt, branche `main`.
    Le `docker-compose.yaml` est à la racine, rien à adapter.
-2. Variables : **`SECRET_KEY`** (une valeur aléatoire), et
-   `FRONTEND_ORIGIN=https://<ton-sous-domaine>`.
-3. Vérifier que le volume **`db-data`** est bien persistant — c'est la base
-   entière. Le second montage sert aux pièces jointes.
+2. Variables : **`SECRET_KEY`** et `FRONTEND_ORIGIN=https://<ton-sous-domaine>`.
+   Générer la clé avec `openssl rand -base64 48`, et **ne la coller nulle part
+   ailleurs** — c'est elle qui signe les jetons de session.
+
+   Le compose de l'amont écrivait `SECRET_KEY=your_secret_key_here` **en
+   valeur littérale** : toute clé posée par l'hôte était silencieusement
+   ignorée, et l'instance signait ses jetons avec une chaîne publiée dans un
+   dépôt public. Ici la variable est obligatoire — sans elle, **le déploiement
+   échoue au lieu de démarrer une instance ouverte à la forge de jetons**.
+3. Vérifier que les deux volumes **`db-data`** et **`uploads-data`** sont bien
+   persistants : la base, et les pièces jointes.
+
+   L'amont montait les pièces jointes par un **bind mount sur le dépôt cloné**.
+   Sur une plateforme qui reclone à chaque déploiement, le dossier revient vide
+   — et une capture d'écran jointe à un constat, c'est la preuve du défaut.
+   C'est un volume nommé ici.
 4. Port exposé : **8000**.
 
 ### Le nom de domaine, gratuitement
