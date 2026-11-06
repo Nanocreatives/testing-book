@@ -101,8 +101,11 @@ seulement les colonnes que la page agrège vraiment (`type`, `priority`,
 `status`, `createdAt`). **De 60 s et un plantage à 29 ms et 76 Ko.** La forme
 JSON est inchangée, donc rien à toucher côté frontend.
 
-C'est un défaut de l'amont, pas de notre import : il mérite d'être remonté à
-[`kimatata/unittcms`](https://github.com/kimatata/unittcms).
+C'est un défaut de l'amont, pas de notre import. **Remonté et corrigé chez eux :
+[kimatata/unittcms#466](https://github.com/kimatata/unittcms/pull/466)**, avec un
+test de non-régression qui échoue sur l'implémentation d'origine. Le fichier et
+son test sont **en anglais dans ce dépôt aussi** — garder une version française
+ici rouvrirait le conflit à chaque synchronisation avec l'amont.
 
 ## Deux pièges rencontrés en important
 
