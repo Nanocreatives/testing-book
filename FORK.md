@@ -37,13 +37,42 @@ cd ../focus-qa && node scripts/export-cases.mjs
 ```
 
 ```bash
-node scripts/import-focus-qa.mjs --owner-email=<compte existant de testing-book>
+TCMS_PASSWORD=… node scripts/import.mjs --url=https://… --email=…
 ```
 
-L'import est **idempotent** : relancer met à jour les énoncés, les priorités et
-les types, crée ce qui manque, et laisse les statuts intacts. Il n'écrit aucun
-compte — le propriétaire doit déjà exister, créé par l'inscription normale de
-l'application. `--dry-run` montre ce qui serait fait.
+L'import passe par **l'API**, pas par le fichier SQLite : une instance déployée
+vit dans un volume Docker sur un serveur distant, qu'aucun script local ne peut
+ouvrir. C'est aussi ce qui permettra de déclencher un import depuis
+l'application elle-même, sans accès au serveur.
+
+Le mot de passe se lit dans l'environnement et n'apparaît jamais en argument :
+une ligne de commande est visible de tout le système. En développement, le
+backend sert ses routes à la racine — ajouter `--api-path=` (vide), car le
+préfixe `/api` n'existe qu'en production, où `entrypoint.js` le monte.
+
+**L'import est idempotent** : relancer met à jour les énoncés, crée ce qui
+manque, et ne réécrit **jamais** un statut déjà saisi par un testeur. Vérifié
+sur 1020 cas : second passage, 0 créé, 0 modifié, 1020 inchangés.
+
+### Pourquoi un classeur Excel et non des créations unitaires
+
+L'API limite à **1000 requêtes par heure et par IP**. Créer 1020 cas un par un
+en demanderait plus de 1100 : l'import échouerait à mi-parcours, par
+construction. La route d'import groupé prend un classeur par dossier et fait un
+`bulkCreate` — une requête pour toute une section. On retombe sous les 250
+requêtes.
+
+### Deux pièges d'identité
+
+**Les campagnes se créent avant les cas.** `GET /cases/byproject` exige un
+`runId` existant : sans campagne en base, la relecture échoue, l'import ne voit
+pas les cas déjà présents et les duplique à chaque relance.
+
+**Un cas s'identifie par son dossier ET son titre**, jamais par le titre seul.
+Des plans différents portent des identifiants identiques — `PRE-02` existe dans
+le plan 05 et dans le plan 14. Avec une clé sur le seul titre, les deux n'en
+font qu'un : ils s'écrasent mutuellement à chaque import, et leur rattachement
+aux campagnes désigne le mauvais cas.
 
 ## Comment les 1020 cas sont rangés
 
