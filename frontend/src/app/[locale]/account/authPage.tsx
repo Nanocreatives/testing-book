@@ -21,9 +21,10 @@ type Props = {
   messages: AuthMessages;
   locale: LocaleCodeType;
   ssoEnabled: boolean;
+  signupEnabled: boolean;
 };
 
-export default function AuthPage({ isSignup, messages, locale, ssoEnabled }: Props) {
+export default function AuthPage({ isSignup, messages, locale, ssoEnabled, signupEnabled }: Props) {
   const router = useRouter();
   const context = useContext(TokenContext);
   const [user, setUser] = useState<UserType>({
@@ -107,16 +108,18 @@ export default function AuthPage({ isSignup, messages, locale, ssoEnabled }: Pro
       <Card className="w-[380px] md:w-[480px]">
         <CardHeader className="px-4 pt-4 pb-0 flex justify-between">
           <h4 className="font-bold text-large">{messages.title}</h4>
-          <Button
-            as={Link}
-            href={isSignup ? '/account/signin' : '/account/signup'}
-            locale={locale}
-            color="primary"
-            variant="light"
-            endContent={<ChevronRight size={16} />}
-          >
-            {messages.linkTitle}
-          </Button>
+          {(isSignup || signupEnabled) && (
+            <Button
+              as={Link}
+              href={isSignup ? '/account/signin' : '/account/signup'}
+              locale={locale}
+              color="primary"
+              variant="light"
+              endContent={<ChevronRight size={16} />}
+            >
+              {messages.linkTitle}
+            </Button>
+          )}
         </CardHeader>
         <CardBody className="overflow-visible px-4 pt-0 pb-4">
           <form>

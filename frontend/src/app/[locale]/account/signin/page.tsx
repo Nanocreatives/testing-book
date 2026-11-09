@@ -3,6 +3,7 @@ import AuthPage from '../authPage';
 import { PageType } from '@/types/base';
 import { LocaleCodeType } from '@/types/locale';
 import { fetchSSOEnabled } from '@/utils/ssoAvailable';
+import { fetchSignupEnabled } from '@/utils/signupAvailable';
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: LocaleCodeType } }) {
   const t = await getTranslations({ locale, namespace: 'Auth' });
@@ -14,6 +15,7 @@ export async function generateMetadata({ params: { locale } }: { params: { local
 
 export default async function Page({ params }: PageType) {
   const ssoEnabled = await fetchSSOEnabled();
+  const signupEnabled = await fetchSignupEnabled();
   const t = await getTranslations('Auth');
   const messages = {
     title: t('signin'),
@@ -38,7 +40,13 @@ export default async function Page({ params }: PageType) {
   };
   return (
     <>
-      <AuthPage isSignup={false} messages={messages} locale={params.locale as LocaleCodeType} ssoEnabled={ssoEnabled} />
+      <AuthPage
+        isSignup={false}
+        messages={messages}
+        locale={params.locale as LocaleCodeType}
+        ssoEnabled={ssoEnabled}
+        signupEnabled={signupEnabled}
+      />
     </>
   );
 }

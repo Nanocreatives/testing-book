@@ -1,8 +1,9 @@
 import { getTranslations } from 'next-intl/server';
-import { useTranslations } from 'next-intl';
 import AuthPage from '../authPage';
+import SignupClosed from './SignupClosed';
 import { PageType } from '@/types/base';
 import { LocaleCodeType } from '@/types/locale';
+import { fetchSignupEnabled } from '@/utils/signupAvailable';
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: LocaleCodeType } }) {
   const t = await getTranslations({ locale, namespace: 'Auth' });
@@ -12,8 +13,8 @@ export async function generateMetadata({ params: { locale } }: { params: { local
   };
 }
 
-export default function Page({ params }: PageType) {
-  const t = useTranslations('Auth');
+export default async function Page({ params }: PageType) {
+  const t = await getTranslations('Auth');
   const messages = {
     title: t('signup'),
     linkTitle: t('or_signin'),
@@ -35,9 +36,28 @@ export default function Page({ params }: PageType) {
     signinError: t('signin_error'),
     demoPageWarning: t('demo_page_warning'),
   };
+  // Fermée, la page ne montre pas un formulaire qui rendrait 403 : elle dit
+  // que la porte est close et renvoie vers la connexion.
+  if (!(await fetchSignupEnabled())) {
+    return (
+      <SignupClosed
+        title={t('signup_closed')}
+        detail={t('signup_closed_detail')}
+        linkTitle={t('or_signin')}
+        locale={params.locale as LocaleCodeType}
+      />
+    );
+  }
+
   return (
     <>
-      <AuthPage isSignup={true} messages={messages} locale={params.locale as LocaleCodeType} ssoEnabled={false} />
+      <AuthPage
+        isSignup={true}
+        messages={messages}
+        locale={params.locale as LocaleCodeType}
+        ssoEnabled={false}
+        signupEnabled={true}
+      />
     </>
   );
 }

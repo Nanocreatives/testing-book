@@ -139,7 +139,9 @@
     "max_file_size_5mb": "Tamanho máximo do arquivo: 5MB",
     "only_images_allowed": "Apenas arquivos de imagem são permitidos",
     "current_password_incorrect": "A senha atual está incorreta",
-    "update_error": "Falha na atualização"
+    "update_error": "Falha na atualização",
+    "signup_closed": "Cadastro encerrado",
+    "signup_closed_detail": "Esta instância não aceita novas contas. Peça a quem a administra para criar uma para você."
   },
   "Health": {
     "health_check": "Verificação de Saúde",

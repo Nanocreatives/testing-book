@@ -139,7 +139,9 @@
     "max_file_size_5mb": "最大文件大小：5MB",
     "only_images_allowed": "仅允许上传图片文件",
     "current_password_incorrect": "当前密码不正确",
-    "update_error": "更新失败"
+    "update_error": "更新失败",
+    "signup_closed": "注册已关闭",
+    "signup_closed_detail": "本实例不再接受新账号。请联系管理员为你创建。"
   },
   "Health": {
     "health_check": "健康检查",
