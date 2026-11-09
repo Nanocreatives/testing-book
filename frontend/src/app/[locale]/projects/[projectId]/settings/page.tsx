@@ -4,6 +4,7 @@ import SettingsPage from './SettingsPage';
 import { LocaleCodeType } from '@/types/locale';
 import { ProjectDialogMessages } from '@/types/project';
 import { SettingsMessages } from '@/types/settings';
+import { StageMessages } from '@/types/stage';
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: LocaleCodeType } }) {
   const t = await getTranslations({ locale, namespace: 'Settings' });
@@ -45,6 +46,42 @@ export default function Page({ params }: { params: { projectId: string; locale: 
     tagErrorDelete: t('tag_error_delete'),
   };
 
+  const st = useTranslations('Stage');
+  const stageMessages: StageMessages = {
+    path: st('path'),
+    pathIntro: st('path_intro'),
+    noPath: st('no_path'),
+    noPathHint: st('no_path_hint'),
+    briefing: st('briefing'),
+    run: st('run'),
+    markAsRead: st('mark_as_read'),
+    openRun: st('open_run'),
+    done: st('done'),
+    locked: st('locked'),
+    lockedBecause: st('locked_because'),
+    casesSettled: st('cases_settled'),
+    addBriefing: st('add_briefing'),
+    addRun: st('add_run'),
+    stageTitle: st('stage_title'),
+    stageContent: st('stage_content'),
+    stageContentPlaceholder: st('stage_content_placeholder'),
+    pickRun: st('pick_run'),
+    moveUp: st('move_up'),
+    moveDown: st('move_down'),
+    save: st('save'),
+    cancel: st('cancel'),
+    edit: st('edit'),
+    delete: st('delete'),
+    areYouSureDeleteStage: st('are_you_sure_delete_stage'),
+    stageCreated: st('stage_created'),
+    stageUpdated: st('stage_updated'),
+    stageDeleted: st('stage_deleted'),
+    stageReordered: st('stage_reordered'),
+    stageErrorTitle: st('stage_error_title'),
+    stageErrorRun: st('stage_error_run'),
+    stageError: st('stage_error'),
+  };
+
   const pt = useTranslations('ProjectDialog');
   const projectDialogMessages: ProjectDialogMessages = {
     project: pt('project'),
@@ -64,6 +101,7 @@ export default function Page({ params }: { params: { projectId: string; locale: 
       <SettingsPage
         projectId={params.projectId}
         messages={messages}
+        stageMessages={stageMessages}
         projectDialogMessages={projectDialogMessages}
         locale={params.locale}
       />

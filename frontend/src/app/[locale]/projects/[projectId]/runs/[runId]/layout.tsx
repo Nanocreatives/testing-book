@@ -35,6 +35,8 @@ export default function RunLayout({
     excludeFromRun: t('exclude_from_run'),
     noCasesFound: t('no_cases_found'),
     areYouSureLeave: t('are_you_sure_leave'),
+    lockedRun: t('locked_run'),
+    lockedBecause: t('locked_because'),
     type: t('type'),
     testDetail: t('test_detail'),
     steps: t('steps'),

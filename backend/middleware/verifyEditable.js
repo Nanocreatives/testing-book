@@ -5,6 +5,7 @@ import defineProject from '../models/projects.js';
 import defineFolder from '../models/folders.js';
 import defineCase from '../models/cases.js';
 import defineRun from '../models/runs.js';
+import defineStage from '../models/stages.js';
 import defineRunCase from '../models/runCases.js';
 
 export default function verifyEditableMiddleware(sequelize) {
@@ -370,6 +371,83 @@ export default function verifyEditableMiddleware(sequelize) {
     return res.status(403).json({ error: 'Forbidden' });
   }
 
+  /**
+   * Verify user is manager of the project by stageId
+   * (have to be called after verifySignedIn() middleware)
+   */
+  async function verifyProjectManagerFromStageId(req, res, next) {
+    const projectId = await projectIdFromStageId(req, res);
+    if (!projectId) {
+      return;
+    }
+
+    const Project = defineProject(sequelize, DataTypes);
+    const project = await Project.findByPk(projectId);
+    if (!project) {
+      return res.status(404).send('Project not found');
+    }
+
+    if (project.userId === req.userId) {
+      next();
+      return;
+    }
+
+    const Member = defineMember(sequelize, DataTypes);
+    const member = await Member.findOne({
+      where: { userId: req.userId, projectId: projectId },
+    });
+    if (member) {
+      const managerRoleIndex = memberRoles.findIndex((entry) => entry.uid === 'manager');
+      if (member.role === managerRoleIndex) {
+        next();
+        return;
+      }
+    }
+
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  /**
+   * Verify user is reporter of the project by stageId
+   * (have to be called after verifySignedIn() middleware)
+   */
+  async function verifyProjectReporterFromStageId(req, res, next) {
+    const projectId = await projectIdFromStageId(req, res);
+    if (!projectId) {
+      return;
+    }
+
+    const isReporterRet = await isReporter(projectId, req.userId);
+    if (isReporterRet) {
+      next();
+      return;
+    }
+
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  /**
+   * Answers the response itself when the stage cannot be resolved, so callers
+   * only have to check for a falsy return.
+   */
+  async function projectIdFromStageId(req, res) {
+    const stageId = req.params.stageId || req.query.stageId;
+    if (!stageId) {
+      res.status(400).json({ error: 'stageId is required' });
+      return null;
+    }
+
+    const Stage = defineStage(sequelize, DataTypes);
+    const stage = await Stage.findByPk(stageId);
+    const projectId = stage && stage.projectId;
+    if (!projectId) {
+      res.status(404).send('failed to find projectId');
+      return null;
+    }
+
+    return projectId;
+  }
+
   async function isReporter(projectId, userId) {
     const Project = defineProject(sequelize, DataTypes);
     const Member = defineMember(sequelize, DataTypes);
@@ -412,6 +490,7 @@ export default function verifyEditableMiddleware(sequelize) {
     verifyProjectOwner,
     verifyProjectManagerFromProjectId,
     verifyProjectManagerFromRunId,
+    verifyProjectManagerFromStageId,
     verifyProjectDeveloperFromProjectId,
     verifyProjectDeveloperFromFolderId,
     verifyProjectDeveloperFromCaseId,
@@ -419,5 +498,6 @@ export default function verifyEditableMiddleware(sequelize) {
     verifyProjectReporterFromRunId,
     verifyProjectReporterFromCommentableId,
     verifyProjectReporterFromRunCaseId,
+    verifyProjectReporterFromStageId,
   };
 }

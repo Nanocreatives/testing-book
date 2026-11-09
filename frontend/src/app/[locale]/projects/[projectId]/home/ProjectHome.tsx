@@ -8,6 +8,7 @@ import { HomeMessages } from './page';
 import TestTypesChart from './TestTypesDonutChart';
 import TestPriorityChart from './TestPriorityDonutChart';
 import TestProgressBarChart from './TestProgressColumnChart';
+import ProjectPath from './ProjectPath';
 import Config from '@/config/config';
 import { TokenContext } from '@/utils/TokenProvider';
 import { ProgressSeriesType } from '@/types/run';
@@ -15,6 +16,7 @@ import { title, subtitle } from '@/components/primitives';
 import { TestRunCaseStatusMessages } from '@/types/status';
 import { TestTypeMessages } from '@/types/testType';
 import { PriorityMessages } from '@/types/priority';
+import { StageMessages } from '@/types/stage';
 import { ProjectType } from '@/types/project';
 import { CasePriorityCountType, CaseTypeCountType } from '@/types/chart';
 import { logError } from '@/utils/errorHandler';
@@ -46,7 +48,9 @@ async function fetchProject(jwt: string, projectId: number) {
 
 type Props = {
   projectId: string;
+  locale: string;
   messages: HomeMessages;
+  stageMessages: StageMessages;
   testRunCaseStatusMessages: TestRunCaseStatusMessages;
   testTypeMessages: TestTypeMessages;
   priorityMessages: PriorityMessages;
@@ -54,7 +58,9 @@ type Props = {
 
 export function ProjectHome({
   projectId,
+  locale,
   messages,
+  stageMessages,
   testRunCaseStatusMessages,
   testTypeMessages,
   priorityMessages,
@@ -141,6 +147,13 @@ export function ProjectHome({
           <CardBody>{project.detail}</CardBody>
         </Card>
       )}
+
+      <ProjectPath
+        projectId={projectId}
+        locale={locale}
+        messages={stageMessages}
+        isManager={context.isProjectManager(Number(projectId))}
+      />
 
       <Divider className="my-8" />
       <h2 className={subtitle()}>{messages.progress}</h2>

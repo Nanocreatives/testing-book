@@ -5,6 +5,7 @@ import { LocaleCodeType } from '@/types/locale';
 import { PriorityMessages } from '@/types/priority';
 import { TestTypeMessages } from '@/types/testType';
 import { TestRunCaseStatusMessages } from '@/types/status';
+import { StageMessages } from '@/types/stage';
 
 export type HomeMessages = {
   folders: string;
@@ -24,7 +25,7 @@ export async function generateMetadata({ params: { locale } }: { params: { local
   };
 }
 
-export default function Page({ params }: { params: { projectId: string } }) {
+export default function Page({ params }: { params: { projectId: string; locale: string } }) {
   const t = useTranslations('Home');
   const messages = {
     folders: t('Folders'),
@@ -62,6 +63,42 @@ export default function Page({ params }: { params: { projectId: string } }) {
     manual: tt('manual'),
   };
 
+  const st = useTranslations('Stage');
+  const stageMessages: StageMessages = {
+    path: st('path'),
+    pathIntro: st('path_intro'),
+    noPath: st('no_path'),
+    noPathHint: st('no_path_hint'),
+    briefing: st('briefing'),
+    run: st('run'),
+    markAsRead: st('mark_as_read'),
+    openRun: st('open_run'),
+    done: st('done'),
+    locked: st('locked'),
+    lockedBecause: st('locked_because'),
+    casesSettled: st('cases_settled'),
+    addBriefing: st('add_briefing'),
+    addRun: st('add_run'),
+    stageTitle: st('stage_title'),
+    stageContent: st('stage_content'),
+    stageContentPlaceholder: st('stage_content_placeholder'),
+    pickRun: st('pick_run'),
+    moveUp: st('move_up'),
+    moveDown: st('move_down'),
+    save: st('save'),
+    cancel: st('cancel'),
+    edit: st('edit'),
+    delete: st('delete'),
+    areYouSureDeleteStage: st('are_you_sure_delete_stage'),
+    stageCreated: st('stage_created'),
+    stageUpdated: st('stage_updated'),
+    stageDeleted: st('stage_deleted'),
+    stageReordered: st('stage_reordered'),
+    stageErrorTitle: st('stage_error_title'),
+    stageErrorRun: st('stage_error_run'),
+    stageError: st('stage_error'),
+  };
+
   const pt = useTranslations('Priority');
   const priorityMessages: PriorityMessages = {
     critical: pt('critical'),
@@ -74,7 +111,9 @@ export default function Page({ params }: { params: { projectId: string } }) {
     <>
       <ProjectHome
         projectId={params.projectId}
+        locale={params.locale}
         messages={messages}
+        stageMessages={stageMessages}
         testRunCaseStatusMessages={testRunCaseStatusMessages}
         testTypeMessages={testTypeMessages}
         priorityMessages={priorityMessages}

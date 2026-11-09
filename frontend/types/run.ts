@@ -74,6 +74,8 @@ type RunMessages = {
   excludeFromRun: string;
   noCasesFound: string;
   areYouSureLeave: string;
+  lockedRun: string;
+  lockedBecause: string;
   type: string;
   testDetail: string;
   steps: string;
