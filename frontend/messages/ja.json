@@ -139,7 +139,9 @@
     "max_file_size_5mb": "最大ファイルサイズ：5MB",
     "only_images_allowed": "画像ファイルのみ許可されています",
     "current_password_incorrect": "現在のパスワードが正しくありません",
-    "update_error": "更新に失敗しました"
+    "update_error": "更新に失敗しました",
+    "signup_closed": "新規登録は受け付けていません",
+    "signup_closed_detail": "このインスタンスは新しいアカウントを受け付けていません。管理者に作成を依頼してください。"
   },
   "Health": {
     "health_check": "ヘルスチェック",

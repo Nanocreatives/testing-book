@@ -139,7 +139,9 @@
     "max_file_size_5mb": "Max. file size: 5MB",
     "only_images_allowed": "Only image files are allowed",
     "current_password_incorrect": "Current password is incorrect",
-    "update_error": "Update failed"
+    "update_error": "Update failed",
+    "signup_closed": "Sign up is closed",
+    "signup_closed_detail": "This instance does not accept new accounts. Ask whoever runs it to create one for you."
   },
   "Health": {
     "health_check": "Health Check",

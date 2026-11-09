@@ -5,6 +5,10 @@ export const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:
 export const SECRET_KEY = process.env.SECRET_KEY || defaultDangerKey;
 
 export const IS_PROD = process.env.NODE_ENV === 'production';
+
+// Ferme la création de compte sur une instance qui n'en attend plus : la page
+// de connexion reste publique, l'inscription ne l'est plus.
+export const SIGNUP_DISABLED = process.env.SIGNUP_DISABLED === 'true';
 export const PORT = process.env.PORT || 8001;
 export const API_PATH = process.env.API_PATH || '/api';
 

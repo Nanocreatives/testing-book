@@ -139,7 +139,9 @@
     "max_file_size_5mb": "Max. Dateigröße: 5MB",
     "only_images_allowed": "Nur Bilddateien erlaubt",
     "current_password_incorrect": "Aktuelles Passwort ist falsch",
-    "update_error": "Aktualisierung fehlgeschlagen"
+    "update_error": "Aktualisierung fehlgeschlagen",
+    "signup_closed": "Registrierung geschlossen",
+    "signup_closed_detail": "Diese Instanz nimmt keine neuen Konten an. Bitte den Betreiber, eines für dich anzulegen."
   },
   "Health": {
     "health_check": "Health Check",
