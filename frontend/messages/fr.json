@@ -139,7 +139,9 @@
     "max_file_size_5mb": "Taille maximale : 5 Mo",
     "only_images_allowed": "Seuls les fichiers image sont acceptés",
     "current_password_incorrect": "Le mot de passe actuel est incorrect",
-    "update_error": "La mise à jour a échoué"
+    "update_error": "La mise à jour a échoué",
+    "signup_closed": "L’inscription est fermée",
+    "signup_closed_detail": "Cette instance n’accepte plus de nouveaux comptes. Demande-en un à la personne qui l’administre."
   },
   "Health": {
     "health_check": "État du service",
