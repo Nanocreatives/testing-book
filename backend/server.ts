@@ -150,6 +150,20 @@ app.use('/runs', runsNewRoute(sequelize));
 app.use('/runs', runsEditRoute(sequelize));
 app.use('/runs', runDeleteRoute(sequelize));
 
+// "/stages"
+import stagesIndexRoute from './routes/stages/index.js';
+import stagesNewRoute from './routes/stages/new.js';
+import stagesReorderRoute from './routes/stages/reorder.js';
+import stagesEditRoute from './routes/stages/edit.js';
+import stagesDeleteRoute from './routes/stages/delete.js';
+import stagesCompleteRoute from './routes/stages/complete.js';
+app.use('/stages', stagesIndexRoute(sequelize));
+app.use('/stages', stagesNewRoute(sequelize));
+app.use('/stages', stagesReorderRoute(sequelize)); // "/reorder" must be before "/:stageId"
+app.use('/stages', stagesEditRoute(sequelize));
+app.use('/stages', stagesDeleteRoute(sequelize));
+app.use('/stages', stagesCompleteRoute(sequelize));
+
 // "/runcases"
 import runCaseIndexRoute from './routes/runcases/index.js';
 import runCaseEditRoute from './routes/runcases/edit.js';

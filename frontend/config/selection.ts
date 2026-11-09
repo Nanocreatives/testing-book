@@ -3,6 +3,7 @@ import { RunStatusType, TestRunCaseStatusType } from '@/types/status';
 import { TestTypeType } from '@/types/testType';
 import { PriorityType } from '@/types/priority';
 import { LocaleType } from '@/types/locale';
+import { StageKindType } from '@/types/stage';
 
 const roles: GlobalRoleType[] = [{ uid: 'administrator' }, { uid: 'user' }];
 const memberRoles: MemberRoleType[] = [{ uid: 'manager' }, { uid: 'developer' }, { uid: 'reporter' }];
@@ -78,6 +79,10 @@ const automationStatus: AutomationStatusType[] = [
 
 const templates: TemplateType[] = [{ uid: 'text' }, { uid: 'step' }];
 
+// What a stage of a project's path asks for: something to read, or a run to
+// work through.
+const stageKinds: StageKindType[] = [{ uid: 'briefing' }, { uid: 'run' }];
+
 export {
   roles,
   memberRoles,
@@ -88,4 +93,5 @@ export {
   templates,
   testRunStatus,
   testRunCaseStatus,
+  stageKinds,
 };

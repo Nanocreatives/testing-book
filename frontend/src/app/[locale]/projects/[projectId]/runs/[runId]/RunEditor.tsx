@@ -33,6 +33,7 @@ import {
   ChevronRight,
   Folder,
   Filter,
+  Lock,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { NodeApi, Tree } from 'react-arborist';
@@ -55,9 +56,11 @@ import TestRunFilter from './TestRunFilter';
 import { useRouter } from '@/src/i18n/routing';
 import { testRunStatus } from '@/config/selection';
 import { RunType, RunStatusCountType, RunMessages } from '@/types/run';
+import { StageType } from '@/types/stage';
 import { CaseType } from '@/types/case';
 import { TreeNodeData } from '@/types/folder';
 import { TokenContext } from '@/utils/TokenProvider';
+import { fetchStages } from '@/utils/stagesControl';
 import { useFormGuard } from '@/utils/formGuard';
 import { PriorityMessages } from '@/types/priority';
 import { RunStatusMessages, TestRunCaseStatusMessages } from '@/types/status';
@@ -118,8 +121,28 @@ export default function RunEditor({
   const [assigneeFilter, setAssigneeFilter] = useState<string>('');
   const [members, setMembers] = useState<MemberType[]>([]);
   const [pendingAssignees, setPendingAssignees] = useState<Map<number, number | null>>(new Map());
+  const [blockingStage, setBlockingStage] = useState<StageType | null>(null);
   const router = useRouter();
   const isManager = tokenContext.isProjectManager(Number(projectId));
+
+  // The path may put this run behind stages the reporter has not cleared. A
+  // manager is never held back: they are the one who set the path up.
+  useEffect(() => {
+    async function fetchPathEffect() {
+      if (!tokenContext.isSignedIn() || isManager) {
+        setBlockingStage(null);
+        return;
+      }
+
+      const stages = await fetchStages(tokenContext.token.access_token, projectId);
+      const stage = stages.find((entry) => entry.runId === Number(runId));
+      setBlockingStage(stage && stage.isLocked ? (stages.find((entry) => !entry.isDone) ?? null) : null);
+    }
+
+    fetchPathEffect();
+  }, [tokenContext, projectId, runId, isManager]);
+
+  const isLocked = blockingStage !== null;
 
   // not show warning when navigating to test case detail page
   useFormGuard(isDirty, messages.areYouSureLeave, [`/projects/${projectId}/runs/${runId}/cases/\\d+`]);
@@ -426,7 +449,7 @@ export default function RunEditor({
               </Badge>
             }
             size="sm"
-            isDisabled={!tokenContext.isProjectReporter(Number(projectId))}
+            isDisabled={isLocked || !tokenContext.isProjectReporter(Number(projectId))}
             color="primary"
             isLoading={isUpdating}
             onPress={onSave}
@@ -437,6 +460,18 @@ export default function RunEditor({
       </div>
 
       <div className="container mx-auto max-w-5xl pt-6 px-6 flex-grow">
+        {blockingStage && (
+          <div className="mb-4 flex items-start gap-2 rounded-medium border-medium border-warning-300 bg-warning-50 p-3 dark:bg-warning-100">
+            <Lock size={16} className="mt-1 shrink-0" />
+            <div>
+              <p className="font-bold">{messages.lockedRun}</p>
+              <p className="text-small">
+                {messages.lockedBecause} {blockingStage.title}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="flex">
           <div>
             <div className="w-96 h-72">
@@ -557,7 +592,7 @@ export default function RunEditor({
                   <DropdownTrigger>
                     <Button
                       size="sm"
-                      isDisabled={!tokenContext.isProjectReporter(Number(projectId))}
+                      isDisabled={isLocked || !tokenContext.isProjectReporter(Number(projectId))}
                       color="primary"
                       endContent={<ChevronDown size={16} />}
                     >
@@ -638,7 +673,7 @@ export default function RunEditor({
               runId={runId}
               locale={locale}
               cases={filteredTestCases}
-              isDisabled={!tokenContext.isProjectReporter(Number(projectId))}
+              isDisabled={isLocked || !tokenContext.isProjectReporter(Number(projectId))}
               isManager={isManager}
               members={members}
               selectedKeys={selectedKeys}

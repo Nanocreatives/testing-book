@@ -3,7 +3,9 @@ import { useState, useEffect, useContext } from 'react';
 import { Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@heroui/react';
 import { Pencil, Trash } from 'lucide-react';
 import ProjectTagsManager from './ProjectTagsManager';
+import ProjectStagesManager from './ProjectStagesManager';
 import { SettingsMessages } from '@/types/settings';
+import { StageMessages } from '@/types/stage';
 import { TokenContext } from '@/utils/TokenProvider';
 import { deleteProject, fetchProject, updateProject } from '@/utils/projectsControl';
 import { ProjectDialogMessages, ProjectType } from '@/types/project';
@@ -18,11 +20,12 @@ import UserAvatar from '@/components/UserAvatar';
 type Props = {
   projectId: string;
   messages: SettingsMessages;
+  stageMessages: StageMessages;
   projectDialogMessages: ProjectDialogMessages;
   locale: string;
 };
 
-export default function SettingsPage({ projectId, messages, projectDialogMessages, locale }: Props) {
+export default function SettingsPage({ projectId, messages, stageMessages, projectDialogMessages, locale }: Props) {
   const context = useContext(TokenContext);
   const router = useRouter();
   const [project, setProject] = useState<ProjectType>({
@@ -144,6 +147,18 @@ export default function SettingsPage({ projectId, messages, projectDialogMessage
           </TableBody>
         </Table>
       </div>
+
+      {context.isProjectManager(Number(projectId)) && (
+        <>
+          <div className="w-full p-3 flex items-center justify-between">
+            <h3 className="font-bold">{stageMessages.path}</h3>
+          </div>
+
+          <div className="w-full p-3">
+            <ProjectStagesManager projectId={projectId} messages={stageMessages} />
+          </div>
+        </>
+      )}
 
       <div className="w-full p-3 flex items-center justify-between">
         <h3 className="font-bold">{messages.tagManagement}</h3>
