@@ -57,6 +57,7 @@ if (!BASE || !EMAIL || !PASSWORD) {
 // La route d'import groupé attend les noms, les routes unitaires les indices.
 // Les deux viennent du MÊME tableau de `frontend/config/selection.ts` : y
 // changer un ordre casserait les secondes en silence.
+const MEMBER_ROLES = ['manager', 'developer', 'reporter'];
 const PRIORITIES = ['critical', 'high', 'medium', 'low'];
 const TEST_TYPES = [
   'other',
@@ -159,7 +160,7 @@ const plainText = (md) =>
 // --- Import ------------------------------------------------------------------
 
 const payload = JSON.parse(readFileSync(CASES, 'utf-8'));
-const stats = { folders: 0, cases: 0, updated: 0, inchanges: 0, runs: 0, runCases: 0, kept: 0 };
+const stats = { folders: 0, cases: 0, updated: 0, inchanges: 0, runs: 0, runCases: 0, kept: 0, dev: 0 };
 
 const log = (s) => process.stdout.write(s);
 
@@ -387,6 +388,23 @@ if (orphelins.length) {
 }
 log(` ${stats.cases} créés, ${stats.updated} mis à jour, ${stats.inchanges} inchangés\n`);
 
+// Les cas marqués 🛠 dans les plans demandent la base, le serveur ou la
+// configuration : ils reviennent à l'équipe technique, et l'interface les
+// retire de la liste du rapporteur. Une seule requête groupée, pour rester
+// loin de la limite de débit.
+const casDev = payload.cases
+  .filter((c) => c.markers.includes('dev'))
+  .map((c) => caseIdByRef.get(`${c.plan}/${c.ref}`))
+  .filter(Boolean);
+if (casDev.length) {
+  await api('PUT', '/cases/role', {
+    query: { projectId: project.id },
+    body: { caseIds: casDev, ownerRole: MEMBER_ROLES.indexOf('developer') },
+  });
+  log(` ${casDev.length} confiés à l'équipe technique\n`);
+  stats.dev = casDev.length;
+}
+
 // Rattachement des cas aux campagnes
 log('Rattach. ');
 for (const [wave, run] of runParVague) {
@@ -417,6 +435,7 @@ console.log(`\nTerminé.`);
 console.log(`  dossiers créés    ${stats.folders}`);
 console.log(`  cas créés         ${stats.cases}`);
 console.log(`  cas mis à jour    ${stats.updated}`);
+console.log(`  cas techniques    ${stats.dev ?? 0}`);
 console.log(`  cas inchangés     ${stats.inchanges}`);
 console.log(`  campagnes créées  ${stats.runs}`);
 console.log(`  cas rattachés     ${stats.runCases}`);
