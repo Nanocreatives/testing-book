@@ -91,7 +91,7 @@ export default function SettingsPage({ projectId, messages, stageMessages, proje
 
   return (
     <div className="container mx-auto max-w-3xl pt-6 px-6 flex-grow">
-      <div className="w-full p-3 flex items-center justify-between">
+      <div className="w-full p-3 flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-bold">{messages.projectManagement}</h3>
         <div>
           <Button
@@ -150,7 +150,7 @@ export default function SettingsPage({ projectId, messages, stageMessages, proje
 
       {context.isProjectManager(Number(projectId)) && (
         <>
-          <div className="w-full p-3 flex items-center justify-between">
+          <div className="w-full p-3 flex flex-wrap items-center justify-between gap-2">
             <h3 className="font-bold">{stageMessages.path}</h3>
           </div>
 
@@ -160,7 +160,7 @@ export default function SettingsPage({ projectId, messages, stageMessages, proje
         </>
       )}
 
-      <div className="w-full p-3 flex items-center justify-between">
+      <div className="w-full p-3 flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-bold">{messages.tagManagement}</h3>
       </div>
 
