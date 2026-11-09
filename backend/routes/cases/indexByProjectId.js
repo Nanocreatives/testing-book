@@ -8,6 +8,8 @@ import defineTag from '../../models/tags.js';
 import defineRunCase from '../../models/runCases.js';
 import authMiddleware from '../../middleware/auth.js';
 import visibilityMiddleware from '../../middleware/verifyVisible.js';
+import editableMiddleware from '../../middleware/verifyEditable.js';
+import { roleIndex } from '../runs/caseGate.js';
 
 export default function (sequelize) {
   const Project = defineProject(sequelize, DataTypes);
@@ -26,6 +28,7 @@ export default function (sequelize) {
   const { verifySignedIn } = authMiddleware(sequelize);
   const { verifyProjectVisibleFromProjectId } = visibilityMiddleware(sequelize);
   const { verifyProjectVisibleFromRunId } = visibilityMiddleware(sequelize);
+  const { getProjectRole } = editableMiddleware(sequelize);
 
   router.get(
     '/byproject',
@@ -146,7 +149,15 @@ export default function (sequelize) {
             tagInclude,
           ],
         });
-        res.json(cases);
+        // A reporter is shown their own share only: the rest is someone else's
+        // work, and a list they cannot act on is noise they have to re-read.
+        const role = await getProjectRole(projectId, req.userId);
+        if (role !== 'reporter') {
+          return res.json(cases);
+        }
+
+        const reporterRole = roleIndex('reporter');
+        res.json(cases.filter((testCase) => testCase.ownerRole === null || testCase.ownerRole === reporterRole));
       } catch (error) {
         console.error(error);
         res.status(500).send('Internal Server Error');

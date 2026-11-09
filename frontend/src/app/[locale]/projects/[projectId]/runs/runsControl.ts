@@ -167,6 +167,55 @@ async function exportRun(jwt: string, runId: number, type: string) {
   }
 }
 
+/** Who is holding this run's reader back, and which of their cases it closes. */
+async function fetchRunGate(jwt: string, runId: number) {
+  const fetchOptions = {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${jwt}`,
+    },
+  };
+
+  const url = `${apiServer}/runs/${runId}/gate`;
+
+  try {
+    const response = await fetch(url, fetchOptions);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error: unknown) {
+    logError('Error fetching run gate:', error);
+    return { role: null, blocking: [], blockedCaseIds: [], reporterBlocking: [] };
+  }
+}
+
+/** Hands a batch of cases to one kind of member, or back to everyone with null. */
+async function updateCasesRole(jwt: string, projectId: number, caseIds: number[], ownerRole: number | null) {
+  const fetchOptions = {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${jwt}`,
+    },
+    body: JSON.stringify({ caseIds, ownerRole }),
+  };
+
+  const url = `${apiServer}/cases/role?projectId=${projectId}`;
+
+  try {
+    const response = await fetch(url, fetchOptions);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error: unknown) {
+    logError('Error updating case roles:', error);
+    throw error;
+  }
+}
+
 async function fetchRunCases(jwt: string, runId: number) {
   const url = `${apiServer}/runcases?runId=${runId}`;
 
@@ -433,4 +482,6 @@ export {
   fetchProjectCases,
   assignRunCases,
   fetchProjectMembersForRun,
+  fetchRunGate,
+  updateCasesRole,
 };

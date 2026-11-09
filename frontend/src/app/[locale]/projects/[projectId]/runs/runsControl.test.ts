@@ -13,6 +13,7 @@ const sampleTestCase: CaseType = {
   template: 0,
   preConditions: '',
   expectedResults: '',
+  ownerRole: null,
   folderId: 1,
 };
 

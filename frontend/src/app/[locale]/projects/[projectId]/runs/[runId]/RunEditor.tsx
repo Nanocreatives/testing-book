@@ -34,6 +34,7 @@ import {
   Folder,
   Filter,
   Lock,
+  UserCog,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { NodeApi, Tree } from 'react-arborist';
@@ -47,6 +48,8 @@ import {
   exportRun,
   assignRunCases,
   fetchProjectMembersForRun,
+  fetchRunGate,
+  updateCasesRole,
 } from '../runsControl';
 import { fetchFolders } from '../../folders/foldersControl';
 import RunProgressChart from './RunPregressDonutChart';
@@ -54,8 +57,8 @@ import TestCaseSelector from './TestCaseSelector';
 import AssigneePicker from './AssigneePicker';
 import TestRunFilter from './TestRunFilter';
 import { useRouter } from '@/src/i18n/routing';
-import { testRunStatus } from '@/config/selection';
-import { RunType, RunStatusCountType, RunMessages } from '@/types/run';
+import { testRunStatus, memberRoles } from '@/config/selection';
+import { RunType, RunStatusCountType, RunMessages, RunGateType } from '@/types/run';
 import { StageType } from '@/types/stage';
 import { CaseType } from '@/types/case';
 import { TreeNodeData } from '@/types/folder';
@@ -122,6 +125,7 @@ export default function RunEditor({
   const [members, setMembers] = useState<MemberType[]>([]);
   const [pendingAssignees, setPendingAssignees] = useState<Map<number, number | null>>(new Map());
   const [blockingStage, setBlockingStage] = useState<StageType | null>(null);
+  const [gate, setGate] = useState<RunGateType>({ role: null, blocking: [], blockedCaseIds: [], reporterBlocking: [] });
   const router = useRouter();
   const isManager = tokenContext.isProjectManager(Number(projectId));
 
@@ -144,6 +148,40 @@ export default function RunEditor({
 
   const isLocked = blockingStage !== null;
 
+  const ownerRoleLabel = (ownerRole: number) => {
+    const uid = memberRoles[ownerRole] ? memberRoles[ownerRole].uid : '';
+    if (uid === 'manager') return messages.roleManager;
+    if (uid === 'developer') return messages.roleDeveloper;
+    if (uid === 'reporter') return messages.roleReporter;
+    return messages.ownerEveryone;
+  };
+
+  // One array rather than an item followed by a map: the menu takes a single
+  // collection, and the two forms do not add up.
+  const ownerRoleOptions: { key: string; label: string; value: number | null }[] = [
+    { key: 'everyone', label: messages.ownerEveryone, value: null },
+    ...memberRoles.map((role, index) => ({ key: role.uid, label: ownerRoleLabel(index), value: index })),
+  ];
+
+  const handleBulkOwnerRole = async (ownerRole: number | null) => {
+    const ids =
+      selectedKeys === 'all' ? filteredTestCases.map((entry) => entry.id) : Array.from(selectedKeys).map(Number);
+    if (ids.length === 0) {
+      return;
+    }
+
+    try {
+      await updateCasesRole(tokenContext.token.access_token, Number(projectId), ids, ownerRole);
+      await initTestCases();
+      setGate(await fetchRunGate(tokenContext.token.access_token, Number(runId)));
+      setSelectedKeys(new Set([]));
+      addToast({ title: 'Success', color: 'success', description: messages.roleUpdated });
+    } catch (error: unknown) {
+      addToast({ title: 'Error', color: 'danger', description: messages.roleUpdateFailed });
+      logError('Error updating case roles:', error);
+    }
+  };
+
   // not show warning when navigating to test case detail page
   useFormGuard(isDirty, messages.areYouSureLeave, [`/projects/${projectId}/runs/${runId}/cases/\\d+`]);
 
@@ -151,6 +189,7 @@ export default function RunEditor({
     const { run, statusCounts } = await fetchRun(tokenContext.token.access_token, Number(runId));
     setTestRun(run);
     setRunStatusCounts(statusCounts);
+    setGate(await fetchRunGate(tokenContext.token.access_token, Number(runId)));
   };
 
   const initTestCases = async (search?: string, status?: string[], tag?: string[], assignee?: string) => {
@@ -307,6 +346,7 @@ export default function RunEditor({
       }
 
       await initTestCases();
+      setGate(await fetchRunGate(tokenContext.token.access_token, Number(runId)));
 
       addToast({
         title: 'Success',
@@ -460,7 +500,7 @@ export default function RunEditor({
       </div>
 
       <div className="container mx-auto max-w-5xl pt-6 px-6 flex-grow">
-        {blockingStage && (
+        {blockingStage ? (
           <div className="mb-4 flex items-start gap-2 rounded-medium border-medium border-warning-300 bg-warning-50 p-3 dark:bg-warning-100">
             <Lock size={16} className="mt-1 shrink-0" />
             <div>
@@ -470,6 +510,27 @@ export default function RunEditor({
               </p>
             </div>
           </div>
+        ) : (
+          (gate.blocking.length > 0 || gate.reporterBlocking.length > 0) && (
+            <div className="mb-4 flex items-start gap-2 rounded-medium border-medium border-warning-300 bg-warning-50 p-3 dark:bg-warning-100">
+              <Lock size={16} className="mt-1 shrink-0" />
+              <div className="min-w-0">
+                <p className="font-bold">
+                  {gate.blocking.length > 0 ? messages.waitingOnOthers : messages.reporterIsBlocked}
+                </p>
+                <p className="text-small">
+                  {gate.blocking.length > 0 ? messages.waitingOnOthersDetail : messages.reporterIsBlockedDetail}
+                </p>
+                <ul className="mt-2 text-small">
+                  {(gate.blocking.length > 0 ? gate.blocking : gate.reporterBlocking).slice(0, 6).map((blocker) => (
+                    <li key={blocker.id} className="truncate">
+                      {blocker.title} · {ownerRoleLabel(blocker.ownerRole)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )
         )}
 
         <div className="flex">
@@ -588,6 +649,22 @@ export default function RunEditor({
                     onAssign={(userId) => handleBulkAssignCases(userId)}
                   />
                 )}
+                {tokenContext.isProjectDeveloper(Number(projectId)) && (
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button size="sm" variant="bordered" startContent={<UserCog size={16} />}>
+                        {messages.ownerRole}
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu aria-label="owner role actions">
+                      {ownerRoleOptions.map((option) => (
+                        <DropdownItem key={option.key} onPress={() => handleBulkOwnerRole(option.value)}>
+                          {option.label}
+                        </DropdownItem>
+                      ))}
+                    </DropdownMenu>
+                  </Dropdown>
+                )}
                 <Dropdown>
                   <DropdownTrigger>
                     <Button
@@ -674,6 +751,7 @@ export default function RunEditor({
               locale={locale}
               cases={filteredTestCases}
               isDisabled={isLocked || !tokenContext.isProjectReporter(Number(projectId))}
+              blockedCaseIds={gate.blockedCaseIds}
               isManager={isManager}
               members={members}
               selectedKeys={selectedKeys}

@@ -448,6 +448,30 @@ export default function verifyEditableMiddleware(sequelize) {
     return projectId;
   }
 
+  /**
+   * The role this member plays on a project, as a memberRoles uid. The owner
+   * answers 'manager': they hold every authority a manager holds. Null when the
+   * user is a stranger to the project.
+   */
+  async function getProjectRole(projectId, userId) {
+    const Project = defineProject(sequelize, DataTypes);
+    const project = await Project.findByPk(projectId);
+    if (!project) {
+      return null;
+    }
+    if (project.userId === userId) {
+      return 'manager';
+    }
+
+    const Member = defineMember(sequelize, DataTypes);
+    const member = await Member.findOne({ where: { userId: userId, projectId: projectId } });
+    if (!member) {
+      return null;
+    }
+
+    return memberRoles[member.role] ? memberRoles[member.role].uid : null;
+  }
+
   async function isReporter(projectId, userId) {
     const Project = defineProject(sequelize, DataTypes);
     const Member = defineMember(sequelize, DataTypes);
@@ -488,6 +512,7 @@ export default function verifyEditableMiddleware(sequelize) {
 
   return {
     verifyProjectOwner,
+    getProjectRole,
     verifyProjectManagerFromProjectId,
     verifyProjectManagerFromRunId,
     verifyProjectManagerFromStageId,

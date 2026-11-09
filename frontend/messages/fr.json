@@ -377,7 +377,16 @@
     "assign_selected": "Assigner la sélection",
     "filter_by_assignee": "Filtrer par personne assignée",
     "select_assignee": "Choisir une personne",
-    "search_assignee": "Rechercher…"
+    "search_assignee": "Rechercher…",
+    "waiting_on_others": "En attente d’un autre profil",
+    "waiting_on_others_detail": "Ces cas ne sont pas les tiens. Les tiens restent fermés tant que chacun d’eux n’a pas de statut.",
+    "reporter_is_blocked": "Le rapporteur est bloqué",
+    "reporter_is_blocked_detail": "Ces cas ne sont pas les siens. Les siens restent fermés tant que chacun de ceux-là n’a pas de statut.",
+    "case_blocked": "En attente d’un autre profil",
+    "owner_role": "Rôle",
+    "owner_everyone": "Tout le monde",
+    "role_updated": "Rôle mis à jour",
+    "role_update_failed": "Impossible de mettre à jour le rôle"
   },
   "Comments": {
     "comments": "Commentaires",

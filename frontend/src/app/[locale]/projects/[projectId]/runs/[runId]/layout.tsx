@@ -14,6 +14,7 @@ export default function RunLayout({
   params: { projectId: string; runId: string; locale: string };
 }) {
   const t = useTranslations('Run');
+  const mt = useTranslations('Members');
   const messages: RunMessages = {
     backToRuns: t('back_to_runs'),
     updating: t('updating'),
@@ -64,6 +65,18 @@ export default function RunLayout({
     filterByAssignee: t('filter_by_assignee'),
     selectAssignee: t('select_assignee'),
     searchAssignee: t('search_assignee'),
+    waitingOnOthers: t('waiting_on_others'),
+    waitingOnOthersDetail: t('waiting_on_others_detail'),
+    reporterIsBlocked: t('reporter_is_blocked'),
+    reporterIsBlockedDetail: t('reporter_is_blocked_detail'),
+    caseBlocked: t('case_blocked'),
+    ownerRole: t('owner_role'),
+    ownerEveryone: t('owner_everyone'),
+    roleUpdated: t('role_updated'),
+    roleUpdateFailed: t('role_update_failed'),
+    roleManager: mt('manager'),
+    roleDeveloper: mt('developer'),
+    roleReporter: mt('reporter'),
   };
 
   const rst = useTranslations('RunStatus');
