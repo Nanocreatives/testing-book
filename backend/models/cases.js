@@ -36,6 +36,12 @@ function defineCase(sequelize, DataTypes) {
       type: DataTypes.STRING,
       allowNull: true,
     },
+    // Which kind of member is expected to play this case: an index into
+    // memberRoles of frontend/config/selection.ts. Null means anyone.
+    ownerRole: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
     folderId: {
       type: DataTypes.INTEGER,
       allowNull: false,

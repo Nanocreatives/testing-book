@@ -108,6 +108,7 @@ import casesIndexRoute from './routes/cases/index.js';
 import casesIndexByProjectIdRoute from './routes/cases/indexByProjectId.js';
 import casesShowRoute from './routes/cases/show.js';
 import casesNewRoute from './routes/cases/new.js';
+import casesRoleRoute from './routes/cases/role.js';
 import casesEditRoute from './routes/cases/edit.js';
 import casesDeleteRoute from './routes/cases/delete.js';
 import casesCloneRoute from './routes/cases/clone.js';
@@ -118,6 +119,7 @@ app.use('/cases', casesIndexRoute(sequelize));
 app.use('/cases', casesIndexByProjectIdRoute(sequelize));
 app.use('/cases', casesShowRoute(sequelize));
 app.use('/cases', casesNewRoute(sequelize));
+app.use('/cases', casesRoleRoute(sequelize)); // "/role" must be before "/:caseId"
 app.use('/cases', casesEditRoute(sequelize));
 app.use('/cases', casesDeleteRoute(sequelize));
 app.use('/cases', casesCloneRoute(sequelize));
@@ -137,6 +139,7 @@ app.use('/attachments', attachmentsDownloadRoute(sequelize));
 
 // "/runs"
 import runsDownloadRoute from './routes/runs/download.js';
+import runsGateRoute from './routes/runs/gate.js';
 import runsIndexRoute from './routes/runs/index.js';
 import runsShowRoute from './routes/runs/show.js';
 import runsNewRoute from './routes/runs/new.js';
@@ -144,6 +147,7 @@ import runsEditRoute from './routes/runs/edit.js';
 import runDeleteRoute from './routes/runs/delete.js';
 
 app.use('/runs', runsDownloadRoute(sequelize));
+app.use('/runs', runsGateRoute(sequelize));
 app.use('/runs', runsIndexRoute(sequelize));
 app.use('/runs', runsShowRoute(sequelize));
 app.use('/runs', runsNewRoute(sequelize));

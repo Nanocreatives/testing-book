@@ -30,6 +30,7 @@ const defaultTestCase = {
   template: 0,
   preConditions: '',
   expectedResults: '',
+  ownerRole: null,
   folderId: 0,
   Steps: [],
   Attachments: [],

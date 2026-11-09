@@ -53,6 +53,19 @@ type RunsMessages = {
   delete: string;
 };
 
+type RunGateCaseType = {
+  id: number;
+  title: string;
+  ownerRole: number;
+};
+
+type RunGateType = {
+  role: string | null;
+  blocking: RunGateCaseType[];
+  blockedCaseIds: number[];
+  reporterBlocking: RunGateCaseType[];
+};
+
 type RunMessages = {
   backToRuns: string;
   updating: string;
@@ -99,6 +112,18 @@ type RunMessages = {
   filterByAssignee: string;
   selectAssignee: string;
   searchAssignee: string;
+  waitingOnOthers: string;
+  waitingOnOthersDetail: string;
+  reporterIsBlocked: string;
+  reporterIsBlockedDetail: string;
+  caseBlocked: string;
+  ownerRole: string;
+  ownerEveryone: string;
+  roleUpdated: string;
+  roleUpdateFailed: string;
+  roleManager: string;
+  roleDeveloper: string;
+  roleReporter: string;
 };
 
 type RunDetailMessages = {
@@ -126,4 +151,6 @@ export type {
   RunsMessages,
   RunMessages,
   RunDetailMessages,
+  RunGateCaseType,
+  RunGateType,
 };

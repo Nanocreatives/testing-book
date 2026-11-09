@@ -373,7 +373,16 @@
     "assign_selected": "選択済みを割り当て",
     "filter_by_assignee": "担当者でフィルター",
     "select_assignee": "担当者を選択",
-    "search_assignee": "検索…"
+    "search_assignee": "検索…",
+    "waiting_on_others": "別のロール待ちです",
+    "waiting_on_others_detail": "これらのケースはあなたの担当ではありません。各ケースにステータスが付くまで、あなたのケースは開きません。",
+    "reporter_is_blocked": "レポーターが待たされています",
+    "reporter_is_blocked_detail": "これらはレポーターの担当ではありません。各ケースにステータスが付くまで、レポーターのケースは開きません。",
+    "case_blocked": "別のロール待ちです",
+    "owner_role": "ロール",
+    "owner_everyone": "全員",
+    "role_updated": "ロールを更新しました",
+    "role_update_failed": "ロールを更新できませんでした"
   },
   "Comments": {
     "comments": "コメント",

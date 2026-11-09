@@ -15,11 +15,11 @@ import {
   SortDescriptor,
   Chip,
 } from '@heroui/react';
-import { MoreVertical, CopyPlus, CopyMinus, MessageCircle } from 'lucide-react';
+import { MoreVertical, CopyPlus, CopyMinus, MessageCircle, Lock } from 'lucide-react';
 import RunCaseStatus from './RunCaseStatus';
 import AssigneePicker from './AssigneePicker';
 import { Link, NextUiLinkClasses } from '@/src/i18n/routing';
-import { testRunCaseStatus } from '@/config/selection';
+import { testRunCaseStatus, memberRoles } from '@/config/selection';
 import { CaseType } from '@/types/case';
 import { RunMessages } from '@/types/run';
 import { PriorityMessages } from '@/types/priority';
@@ -34,6 +34,7 @@ type Props = {
   locale: string;
   cases: CaseType[];
   isDisabled: boolean;
+  blockedCaseIds: number[];
   isManager: boolean;
   members: MemberType[];
   selectedKeys: Selection;
@@ -54,6 +55,7 @@ export default function TestCaseSelector({
   locale,
   cases,
   isDisabled,
+  blockedCaseIds,
   isManager,
   members,
   selectedKeys,
@@ -132,6 +134,14 @@ export default function TestCaseSelector({
     });
   }, [sortDescriptor, cases]);
 
+  const ownerRoleLabel = (ownerRole: number) => {
+    const uid = memberRoles[ownerRole] ? memberRoles[ownerRole].uid : '';
+    if (uid === 'manager') return messages.roleManager;
+    if (uid === 'developer') return messages.roleDeveloper;
+    if (uid === 'reporter') return messages.roleReporter;
+    return messages.ownerEveryone;
+  };
+
   const notIncludedCaseClass = 'text-neutral-200 dark:text-neutral-600';
 
   const isCaseIncluded = (testCase: CaseType) => {
@@ -148,6 +158,8 @@ export default function TestCaseSelector({
   const renderCell = (testCase: CaseType, columnKey: string): ReactNode => {
     const cellValue = testCase[columnKey as keyof CaseType];
     const isIncluded = isCaseIncluded(testCase);
+    // Held back by work that belongs to someone else, and placed before this one.
+    const isBlocked = blockedCaseIds.includes(testCase.id);
     const runStatus = testCase.RunCases && testCase.RunCases.length > 0 ? testCase.RunCases[0].status : 0;
     const commentCount = testCase.RunCases && testCase.RunCases.length > 0 ? testCase.RunCases[0].commentCount || 0 : 0;
 
@@ -163,6 +175,14 @@ export default function TestCaseSelector({
             >
               {cellValue as string}
             </Link>
+            <div className="mt-1 flex items-center gap-1">
+              {testCase.ownerRole !== null && testCase.ownerRole !== undefined && (
+                <Chip size="sm" variant="flat">
+                  {ownerRoleLabel(testCase.ownerRole)}
+                </Chip>
+              )}
+              {isBlocked && <Lock size={12} className="text-warning" aria-label={messages.caseBlocked} />}
+            </div>
           </div>
         );
       case 'priority':
@@ -194,8 +214,14 @@ export default function TestCaseSelector({
                 radius="full"
                 size="sm"
                 variant="light"
-                title={isIncluded ? testRunCaseStatusMessages[testRunCaseStatus[runStatus].uid] : undefined}
-                isDisabled={!isIncluded}
+                title={
+                  isBlocked
+                    ? messages.caseBlocked
+                    : isIncluded
+                      ? testRunCaseStatusMessages[testRunCaseStatus[runStatus].uid]
+                      : undefined
+                }
+                isDisabled={!isIncluded || isBlocked}
               >
                 {isIncluded ? <RunCaseStatus uid={testRunCaseStatus[runStatus].uid} /> : '-'}
               </Button>
@@ -258,7 +284,10 @@ export default function TestCaseSelector({
                 <MoreVertical size={16} />
               </Button>
             </DropdownTrigger>
-            <DropdownMenu disabledKeys={disabledIncludeExcludeKeys} aria-label="include or exclude actions">
+            <DropdownMenu
+              disabledKeys={isBlocked ? ['include', 'exclude'] : disabledIncludeExcludeKeys}
+              aria-label="include or exclude actions"
+            >
               <DropdownItem
                 key="include"
                 startContent={<CopyPlus size={16} />}

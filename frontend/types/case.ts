@@ -10,6 +10,7 @@ type CaseType = {
   preConditions: string;
   expectedResults: string;
   folderId: number;
+  ownerRole: number | null;
   Steps?: StepType[];
   RunCases?: RunCaseType[];
   Attachments?: AttachmentType[];

@@ -373,7 +373,16 @@
     "assign_selected": "Assign selected",
     "filter_by_assignee": "Filter by assignee",
     "select_assignee": "Select assignee",
-    "search_assignee": "Search…"
+    "search_assignee": "Search…",
+    "waiting_on_others": "Waiting on another role",
+    "waiting_on_others_detail": "These cases are not yours to play. Yours stay closed until each of them carries a status.",
+    "reporter_is_blocked": "The reporter is held back",
+    "reporter_is_blocked_detail": "These cases are not theirs to play. Their own stay closed until each of these carries a status.",
+    "case_blocked": "Waiting on another role",
+    "owner_role": "Role",
+    "owner_everyone": "Everyone",
+    "role_updated": "Role updated",
+    "role_update_failed": "Could not update the role"
   },
   "Comments": {
     "comments": "Comments",

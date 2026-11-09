@@ -373,7 +373,16 @@
     "assign_selected": "Ausgewählte zuweisen",
     "filter_by_assignee": "Nach Beauftragtem filtern",
     "select_assignee": "Beauftragten auswählen",
-    "search_assignee": "Suchen…"
+    "search_assignee": "Suchen…",
+    "waiting_on_others": "Wartet auf eine andere Rolle",
+    "waiting_on_others_detail": "Diese Fälle gehören nicht dir. Deine bleiben geschlossen, bis jeder davon einen Status trägt.",
+    "reporter_is_blocked": "Der Reporter wird aufgehalten",
+    "reporter_is_blocked_detail": "Diese Fälle gehören nicht ihm. Seine bleiben geschlossen, bis jeder davon einen Status trägt.",
+    "case_blocked": "Wartet auf eine andere Rolle",
+    "owner_role": "Rolle",
+    "owner_everyone": "Alle",
+    "role_updated": "Rolle aktualisiert",
+    "role_update_failed": "Rolle konnte nicht aktualisiert werden"
   },
   "Comments": {
     "comments": "Kommentare",

@@ -373,7 +373,16 @@
     "assign_selected": "分配所选",
     "filter_by_assignee": "按负责人筛选",
     "select_assignee": "选择负责人",
-    "search_assignee": "搜索…"
+    "search_assignee": "搜索…",
+    "waiting_on_others": "等待其他角色",
+    "waiting_on_others_detail": "这些用例不属于你。在它们各自标记状态之前，属于你的用例保持锁定。",
+    "reporter_is_blocked": "报告者被阻塞",
+    "reporter_is_blocked_detail": "这些用例不属于报告者。在它们各自标记状态之前，报告者的用例保持锁定。",
+    "case_blocked": "等待其他角色",
+    "owner_role": "角色",
+    "owner_everyone": "所有人",
+    "role_updated": "角色已更新",
+    "role_update_failed": "无法更新角色"
   },
   "Comments": {
     "comments": "评论",
