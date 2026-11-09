@@ -22,6 +22,7 @@ const defaultRun = {
   name: 'Untitled Run',
   configurations: 0,
   description: '',
+  instructions: null,
   state: 0,
   projectId: 0,
   createdAt: '',

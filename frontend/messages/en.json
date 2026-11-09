@@ -336,6 +336,8 @@
     "title": "Title",
     "please_enter": "Please enter run name",
     "description": "Description",
+    "instructions": "How to run this campaign",
+    "instructions_placeholder": "Conventions, prerequisites, what counts as passed…",
     "priority": "Priority",
     "status": "Status",
     "actions": "Actions",

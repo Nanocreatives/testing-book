@@ -336,6 +336,8 @@
     "title": "标题",
     "please_enter": "请输入运行名称",
     "description": "描述",
+    "instructions": "如何执行此测试运行",
+    "instructions_placeholder": "约定、前提条件、何为通过…",
     "priority": "优先级",
     "status": "状态",
     "actions": "操作",

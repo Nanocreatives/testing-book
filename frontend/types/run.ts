@@ -3,6 +3,7 @@ type RunType = {
   name: string;
   configurations: number;
   description: string;
+  instructions: string | null;
   state: number;
   projectId: number;
   createdAt: string;
@@ -65,6 +66,8 @@ type RunMessages = {
   title: string;
   pleaseEnter: string;
   description: string;
+  instructions: string;
+  instructionsPlaceholder: string;
   priority: string;
   status: string;
   actions: string;

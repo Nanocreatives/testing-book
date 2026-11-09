@@ -72,6 +72,7 @@ const defaultTestRun = {
   name: '',
   configurations: 0,
   description: '',
+  instructions: null,
   state: 0,
   projectId: 0,
   createdAt: '',
@@ -485,6 +486,31 @@ export default function RunEditor({
               }}
               className="mt-3"
             />
+
+            {/* How the run must be executed. Managers write it; everyone else
+                reads it — a reporter needs the conventions before setting a
+                single status, and the edit form is not where they look. */}
+            {isManager ? (
+              <Textarea
+                size="sm"
+                variant="bordered"
+                label={messages.instructions}
+                placeholder={messages.instructionsPlaceholder}
+                value={testRun.instructions ?? ''}
+                minRows={3}
+                onValueChange={(changeValue) => {
+                  setTestRun({ ...testRun, instructions: changeValue });
+                }}
+                className="mt-3"
+              />
+            ) : (
+              testRun.instructions && (
+                <div className="mt-3 rounded-medium border-medium border-default-200 p-3">
+                  <p className="text-tiny text-default-600">{messages.instructions}</p>
+                  <p className="mt-1 text-small whitespace-pre-wrap">{testRun.instructions}</p>
+                </div>
+              )
+            )}
 
             <div>
               <Select
