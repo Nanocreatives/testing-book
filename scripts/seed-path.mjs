@@ -124,7 +124,7 @@ Huit de ses douze cas sont du travail d'équipe, pas le tien : ENV-01 à ENV-06,
 Quatre sont à ta portée, et ce sont ceux qu'on te demande :
 
 ENV-07 — ouvre les deux boîtes mail, la professionnelle et celle de contact, et vérifie que tu y accèdes. Regarde aussi dans les spams.
-ENV-08 — ouvre la liste des collaborateurs et vérifie que les huit personas existent. Deux manquent aujourd'hui, P6 et P7 : c'est attendu, mets Ignoré et dis-le.
+ENV-08 — ouvre la liste des collaborateurs et vérifie que les huit personas existent. P6 et P7 viennent d'être posés : ils doivent être là tous les deux.
 ENV-09 — vérifie qu'une période de paie est ouverte.
 ENV-10 — vérifie les réglages de l'organisation : soumission d'activité activée, délai à 5 jours, calendrier des jours fériés chargé pour l'année en cours.
 
@@ -143,7 +143,7 @@ const WAVES = [
 
 Huit cas sur douze sont du travail d'équipe — ENV-01 à ENV-06, ENV-11, ENV-12. Ne les coche pas seule.
 
-Les quatre qui te reviennent : ENV-07 (les deux boîtes mail), ENV-08 (les huit personas — P6 et P7 manquent, c'est attendu), ENV-09 (une période de paie ouverte), ENV-10 (les réglages de l'organisation).
+Les quatre qui te reviennent : ENV-07 (les deux boîtes mail), ENV-08 (les huit personas, P6 et P7 compris), ENV-09 (une période de paie ouverte), ENV-10 (les réglages de l'organisation).
 
 Aucun cas de cette vague ne doit rester en Échoué quand on passe à la suite : un prérequis rouge fausse tout le reste.`,
   },
