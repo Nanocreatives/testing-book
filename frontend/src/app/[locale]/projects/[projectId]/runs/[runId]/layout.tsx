@@ -26,6 +26,8 @@ export default function RunLayout({
     title: t('title'),
     pleaseEnter: t('please_enter'),
     description: t('description'),
+    instructions: t('instructions'),
+    instructionsPlaceholder: t('instructions_placeholder'),
     priority: t('priority'),
     actions: t('actions'),
     status: t('status'),

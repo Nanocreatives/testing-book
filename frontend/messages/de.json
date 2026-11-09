@@ -336,6 +336,8 @@
     "title": "Titel",
     "please_enter": "Bitte Name des Testlaufs eingeben",
     "description": "Beschreibung",
+    "instructions": "Wie diese Testreihe durchzuführen ist",
+    "instructions_placeholder": "Konventionen, Voraussetzungen, was als bestanden gilt…",
     "priority": "Priorität",
     "status": "Status",
     "actions": "Aktionen",

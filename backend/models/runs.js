@@ -12,6 +12,12 @@ function defineRun(sequelize, DataTypes) {
       type: DataTypes.STRING,
       allowNull: true,
     },
+    // How the run must be executed: conventions, prerequisites, what counts as
+    // passed. TEXT rather than STRING because this is prose, not a label.
+    instructions: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
     state: {
       type: DataTypes.INTEGER,
       allowNull: true,

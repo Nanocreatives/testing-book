@@ -13,7 +13,7 @@ export default function (sequelize) {
   router.post('/', verifySignedIn, verifyProjectReporterFromProjectId, async (req, res) => {
     try {
       const projectId = req.query.projectId;
-      const { name, configurations, description, state } = req.body;
+      const { name, configurations, description, state, instructions } = req.body;
       if (!name || !projectId) {
         return res.status(400).json({ error: 'Name and projectId are required' });
       }
@@ -23,6 +23,7 @@ export default function (sequelize) {
         configurations,
         description,
         state,
+        instructions,
         projectId,
       });
 

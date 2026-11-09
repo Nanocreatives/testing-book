@@ -336,6 +336,8 @@
     "title": "Título",
     "please_enter": "Por favor, insira o nome da execução",
     "description": "Descrição",
+    "instructions": "Como executar esta campanha",
+    "instructions_placeholder": "Convenções, pré-requisitos, o que conta como aprovado…",
     "priority": "Prioridade",
     "status": "Status",
     "actions": "Ações",

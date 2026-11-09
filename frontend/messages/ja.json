@@ -336,6 +336,8 @@
     "title": "タイトル",
     "please_enter": "タイトルを入力してください",
     "description": "詳細",
+    "instructions": "このテスト実行の進め方",
+    "instructions_placeholder": "規約、前提条件、合格の基準…",
     "priority": "優先度",
     "status": "ステータス",
     "actions": "アクション",
