@@ -160,7 +160,7 @@ const plainText = (md) =>
 // --- Import ------------------------------------------------------------------
 
 const payload = JSON.parse(readFileSync(CASES, 'utf-8'));
-const stats = { folders: 0, cases: 0, updated: 0, inchanges: 0, runs: 0, runCases: 0, kept: 0, dev: 0 };
+const stats = { folders: 0, cases: 0, updated: 0, inchanges: 0, runs: 0, runCases: 0, kept: 0, roles: 0 };
 
 const log = (s) => process.stdout.write(s);
 
@@ -390,20 +390,42 @@ log(` ${stats.cases} créés, ${stats.updated} mis à jour, ${stats.inchanges} i
 
 // Les cas marqués 🛠 dans les plans demandent la base, le serveur ou la
 // configuration : ils reviennent à l'équipe technique, et l'interface les
-// retire de la liste du rapporteur. Une seule requête groupée, pour rester
-// loin de la limite de débit.
-const casDev = payload.cases
-  .filter((c) => c.markers.includes('dev'))
-  .map((c) => caseIdByRef.get(`${c.plan}/${c.ref}`))
-  .filter(Boolean);
-if (casDev.length) {
-  await api('PUT', '/cases/role', {
-    query: { projectId: project.id },
-    body: { caseIds: casDev, ownerRole: MEMBER_ROLES.indexOf('developer') },
-  });
-  log(` ${casDev.length} confiés à l'équipe technique\n`);
-  stats.dev = casDev.length;
+// retire de la liste du rapporteur.
+//
+// Les plans font autorité dans les DEUX sens : un cas marqué est confié, un cas
+// non marqué est rendu à tout le monde. Sans ce second sens, un rôle posé à la
+// main par erreur ne serait jamais rattrapé — et il l'a déjà été.
+const DEVELOPPEUR = MEMBER_ROLES.indexOf('developer');
+const roleActuel = new Map((Array.isArray(casFinaux) ? casFinaux : []).map((c) => [c.id, c.ownerRole ?? null]));
+
+const aCorriger = new Map([
+  [DEVELOPPEUR, []],
+  [null, []],
+]);
+for (const c of payload.cases) {
+  const id = caseIdByRef.get(`${c.plan}/${c.ref}`);
+  const voulu = c.markers.includes('dev') ? DEVELOPPEUR : null;
+  if (id && roleActuel.get(id) !== voulu) {
+    aCorriger.get(voulu).push(id);
+  }
 }
+
+// Par paquets : SQLite refuse une clause `IN` de mille valeurs, et un import
+// complet en compte autant.
+const PAQUET = 400;
+let rolesAlignes = 0;
+for (const [ownerRole, ids] of aCorriger) {
+  for (let i = 0; i < ids.length; i += PAQUET) {
+    const lot = ids.slice(i, i + PAQUET);
+    await api('PUT', '/cases/role', {
+      query: { projectId: project.id },
+      body: { caseIds: lot, ownerRole },
+    });
+    rolesAlignes += lot.length;
+  }
+}
+stats.roles = rolesAlignes;
+log(rolesAlignes ? ` ${rolesAlignes} rôle(s) alignés sur les plans\n` : ' rôles déjà conformes aux plans\n');
 
 // Rattachement des cas aux campagnes
 log('Rattach. ');
@@ -435,7 +457,7 @@ console.log(`\nTerminé.`);
 console.log(`  dossiers créés    ${stats.folders}`);
 console.log(`  cas créés         ${stats.cases}`);
 console.log(`  cas mis à jour    ${stats.updated}`);
-console.log(`  cas techniques    ${stats.dev ?? 0}`);
+console.log(`  rôles alignés     ${stats.roles ?? 0}`);
 console.log(`  cas inchangés     ${stats.inchanges}`);
 console.log(`  campagnes créées  ${stats.runs}`);
 console.log(`  cas rattachés     ${stats.runCases}`);
