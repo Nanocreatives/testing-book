@@ -336,6 +336,8 @@
     "title": "Titre",
     "please_enter": "Veuillez saisir le nom de la campagne",
     "description": "Description",
+    "instructions": "Comment jouer cette campagne",
+    "instructions_placeholder": "Conventions, prérequis, ce qui compte comme réussi…",
     "priority": "Priorité",
     "status": "Statut",
     "actions": "Actions",
