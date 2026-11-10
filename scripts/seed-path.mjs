@@ -148,9 +148,9 @@ Elle commence par huit cas marqués « équipe technique » — ENV-01 à ENV-12
 Ensuite, dix actes, et ils sont tous pour toi :
 
 Acte 1 — Firmin s'inscrit et crée Sangha Télécom.
-Acte 2 — il nomme Clarisse administratrice.
+Acte 2 — il fait de Clarisse son administratrice : fiche, invitation, puis droits.
 Acte 3 — Clarisse recrute l'encadrement, chacun avec son rôle.
-Acte 4 — Nadège peuple l'entreprise, 9 fiches à la main puis 43 par import.
+Acte 4 — Nadège peuple l'entreprise, 3 fiches à la main puis 43 par import.
 Acte 5 — les contrats, et le barème de la convention qui s'impose.
 Acte 6 — le premier mois tourne : absences, heures supplémentaires, clôture.
 Acte 7 — la première paie.
@@ -173,7 +173,9 @@ Les huit cas ENV sont du travail d'équipe : ne les coche pas seule, préviens-n
 
 Les dix actes qui suivent sont pour toi. Avant d'attaquer un acte, lis son paragraphe de repli : si un maillon casse, il y a un chemin de secours, et sans lui la suite est bloquée.
 
-Un avertissement, et il concerne l'acte 2. Quand Firmin invitera Clarisse, elle n'aura pas encore de compte Focus — et on sait qu'un invité sans compte a déjà eu du mal à accepter son invitation. Si ça te bloque, mets Échoué, note le message exact que tu vois, et dis-le-nous tout de suite : il y a un contournement, mais il faut qu'on te le pose.`,
+Une chose à savoir avant l'acte 2, sinon tu vas croire à un défaut. Dans Focus, on ne devient pas administrateur sans être d'abord collaborateur. Nommer Clarisse se fait donc en trois temps : créer sa fiche, l'inviter et attendre qu'elle accepte, et seulement après lui donner ses droits. Si tu essaies de donner les droits avant qu'elle ait accepté, le produit refuse — et c'est normal. Un cas vérifie d'ailleurs que ce refus te dit bien d'inviter, et pas autre chose.
+
+La même séquence vaut quatre fois à l'acte 3, pour Nadège, Gilda, Serge et Ruth.`,
   },
   {
     match: 'Vague 1',
