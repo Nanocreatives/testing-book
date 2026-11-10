@@ -42,6 +42,14 @@ function defineCase(sequelize, DataTypes) {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+    // How many distinct people must weigh in before the case counts as played.
+    // Carried by the CASE and not by its link to a run, so the plans decide it
+    // just as they decide ownerRole.
+    verdictsExpected: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+    },
     folderId: {
       type: DataTypes.INTEGER,
       allowNull: false,
