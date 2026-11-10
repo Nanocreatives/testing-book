@@ -74,6 +74,9 @@ type RunMessages = {
   updatedTestRun: string;
   export: string;
   progress: string;
+  disagreeing: string;
+  disagreeingDetail: string;
+  awaitingVerdicts: string;
   refresh: string;
   id: string;
   title: string;
