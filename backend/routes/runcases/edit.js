@@ -4,6 +4,7 @@ import { DataTypes } from 'sequelize';
 import defineRunCase from '../../models/runCases.js';
 import authMiddleware from '../../middleware/auth.js';
 import editableMiddleware from '../../middleware/verifyEditable.js';
+import { applyVerdict } from '../runs/applyVerdict.js';
 
 export default function (sequelize) {
   const { verifySignedIn } = authMiddleware(sequelize);
@@ -16,14 +17,26 @@ export default function (sequelize) {
     const t = await sequelize.transaction();
 
     const createRunCase = async (runCase) => {
+      // Le statut n'est plus écrit directement : il se dérive des verdicts, et
+      // deux sources de vérité pour un même avis divergeraient à la première
+      // écriture ratée.
       const newRunCase = await RunCase.create(
         {
           runId: runId,
           caseId: runCase.caseId,
-          status: runCase.status,
+          status: 0,
         },
         { transaction: t }
       );
+      if (runCase.status !== 0) {
+        await applyVerdict(sequelize, {
+          runCaseId: newRunCase.id,
+          userId: req.userId,
+          status: runCase.status,
+          transaction: t,
+        });
+        newRunCase.status = runCase.status;
+      }
       return newRunCase;
     };
 
@@ -36,16 +49,15 @@ export default function (sequelize) {
     };
 
     const updateRunCase = async (runCase) => {
-      await RunCase.update(
-        {
-          status: runCase.status,
-        },
-        {
-          where: { id: runCase.id },
-          transaction: t,
-        }
-      );
-      return runCase;
+      // Changer un statut, c'est désormais poser SON avis : celui de qui écrit,
+      // pas un verdict d'autorité qui effacerait ceux des autres.
+      const aggregate = await applyVerdict(sequelize, {
+        runCaseId: runCase.id,
+        userId: req.userId,
+        status: runCase.status,
+        transaction: t,
+      });
+      return { ...runCase, status: aggregate };
     };
 
     try {

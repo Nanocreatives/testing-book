@@ -8,6 +8,7 @@ import {
   ClipboardList,
   FlaskConical,
   UserRound,
+  UsersRound,
   Settings,
 } from 'lucide-react';
 import { usePathname, useRouter } from '@/src/i18n/routing';
@@ -41,6 +42,8 @@ export default function Sidebar({ messages, locale }: Props) {
       router.push(`/projects/${projectId}/runs`, { locale: locale });
     } else if (key === 'members') {
       router.push(`/projects/${projectId}/members`, { locale: locale });
+    } else if (key === 'tracking') {
+      router.push(`/projects/${projectId}/tracking`, { locale: locale });
     } else if (key === 'settings') {
       router.push(`/projects/${projectId}/settings`, { locale: locale });
     }
@@ -54,6 +57,8 @@ export default function Sidebar({ messages, locale }: Props) {
         setCurrentKey('cases');
       } else if (currentPath.includes('runs')) {
         setCurrentKey('runs');
+      } else if (currentPath.includes('tracking')) {
+        setCurrentKey('tracking');
       } else if (currentPath.includes('members')) {
         setCurrentKey('members');
       } else if (currentPath.includes('settings')) {
@@ -84,6 +89,11 @@ export default function Sidebar({ messages, locale }: Props) {
       key: 'members',
       text: messages.members,
       startContent: <UserRound strokeWidth={ICON_STROKE_WIDTH} size={ICON_SIZE} />,
+    },
+    {
+      key: 'tracking',
+      text: messages.tracking,
+      startContent: <UsersRound strokeWidth={ICON_STROKE_WIDTH} size={ICON_SIZE} />,
     },
     {
       key: 'settings',

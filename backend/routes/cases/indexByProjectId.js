@@ -9,6 +9,9 @@ import defineRunCase from '../../models/runCases.js';
 import authMiddleware from '../../middleware/auth.js';
 import visibilityMiddleware from '../../middleware/verifyVisible.js';
 import editableMiddleware from '../../middleware/verifyEditable.js';
+import defineMember from '../../models/members.js';
+import defineRunCaseVerdict from '../../models/runCaseVerdicts.js';
+import { isBlindForViewer, publishedStatus } from '../runs/blindVerdicts.js';
 import { roleIndex } from '../runs/caseGate.js';
 
 export default function (sequelize) {
@@ -17,6 +20,8 @@ export default function (sequelize) {
   const Case = defineCase(sequelize, DataTypes);
   const RunCase = defineRunCase(sequelize, DataTypes);
   const Tags = defineTag(sequelize, DataTypes);
+  const Member = defineMember(sequelize, DataTypes);
+  const RunCaseVerdict = defineRunCaseVerdict(sequelize, DataTypes);
   Project.hasMany(Folder, { foreignKey: 'projectId' });
   Folder.hasMany(Case, { foreignKey: 'folderId' });
   Folder.belongsTo(Project, { foreignKey: 'projectId' });
@@ -29,6 +34,56 @@ export default function (sequelize) {
   const { verifyProjectVisibleFromProjectId } = visibilityMiddleware(sequelize);
   const { verifyProjectVisibleFromRunId } = visibilityMiddleware(sequelize);
   const { getProjectRole } = editableMiddleware(sequelize);
+
+  /**
+   * Retire des cas rendus le verdict des autres, tant que le lecteur ne s'est
+   * pas prononcé et que le cas en attend encore un.
+   *
+   * Les objets Sequelize sont aplatis d'abord : on publie du JSON, et modifier
+   * une instance en place laisserait le statut d'origine dans ses dataValues.
+   */
+  async function blindOthersVerdicts(cases, projectId, viewerId) {
+    const plain = cases.map((testCase) => testCase.get({ plain: true }));
+    const runCaseIds = plain.flatMap((testCase) => (testCase.RunCases ?? []).map((runCase) => runCase.id));
+    if (runCaseIds.length === 0) {
+      return plain;
+    }
+
+    const [verdicts, members] = await Promise.all([
+      RunCaseVerdict.findAll({
+        where: { runCaseId: { [Op.in]: runCaseIds } },
+        attributes: ['runCaseId', 'userId', 'status'],
+      }),
+      Member.findAll({ where: { projectId: projectId }, attributes: ['role'] }),
+    ]);
+
+    const byRunCase = new Map();
+    for (const verdict of verdicts) {
+      const bucket = byRunCase.get(verdict.runCaseId) ?? [];
+      bucket.push(verdict);
+      byRunCase.set(verdict.runCaseId, bucket);
+    }
+    const memberRoles = members.map((member) => member.role);
+
+    for (const testCase of plain) {
+      const ownerRole = testCase.ownerRole ?? null;
+      const eligibleCount = memberRoles.filter((entry) => ownerRole === null || entry === ownerRole).length;
+
+      for (const runCase of testCase.RunCases ?? []) {
+        const given = byRunCase.get(runCase.id) ?? [];
+        const blind = isBlindForViewer({
+          statuses: given.map((verdict) => verdict.status),
+          viewerHasVoted: given.some((verdict) => verdict.userId === viewerId),
+          expected: testCase.verdictsExpected ?? 1,
+          eligibleCount,
+        });
+        runCase.status = publishedStatus({ status: runCase.status, blind });
+        runCase.blind = blind;
+      }
+    }
+
+    return plain;
+  }
 
   router.get(
     '/byproject',
@@ -152,12 +207,29 @@ export default function (sequelize) {
         // A reporter is shown their own share only: the rest is someone else's
         // work, and a list they cannot act on is noise they have to re-read.
         const role = await getProjectRole(projectId, req.userId);
-        if (role !== 'reporter') {
-          return res.json(cases);
-        }
-
         const reporterRole = roleIndex('reporter');
-        res.json(cases.filter((testCase) => testCase.ownerRole === null || testCase.ownerRole === reporterRole));
+        const visible =
+          role === 'reporter'
+            ? cases.filter((testCase) => testCase.ownerRole === null || testCase.ownerRole === reporterRole)
+            : cases;
+
+        const blinded = await blindOthersVerdicts(visible, projectId, req.userId);
+
+        // Le filtre de statut a tourné en SQL, donc AVANT le masquage : sans ce
+        // second passage, filtrer sur « Réussi » révélerait les cas masqués en
+        // les faisant apparaître sous ce statut.
+        if (!statusFilter) {
+          return res.json(blinded);
+        }
+        const wanted = status
+          .split(',')
+          .map((value) => parseInt(value.trim(), 10))
+          .filter((value) => !isNaN(value));
+        res.json(
+          blinded.filter((testCase) =>
+            (testCase.RunCases ?? []).every((runCase) => !runCase.blind || wanted.includes(0))
+          )
+        );
       } catch (error) {
         console.error(error);
         res.status(500).send('Internal Server Error');

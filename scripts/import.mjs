@@ -160,7 +160,7 @@ const plainText = (md) =>
 // --- Import ------------------------------------------------------------------
 
 const payload = JSON.parse(readFileSync(CASES, 'utf-8'));
-const stats = { folders: 0, cases: 0, updated: 0, inchanges: 0, runs: 0, runCases: 0, kept: 0, roles: 0 };
+const stats = { folders: 0, cases: 0, updated: 0, inchanges: 0, runs: 0, runCases: 0, kept: 0, roles: 0, avis: 0 };
 
 const log = (s) => process.stdout.write(s);
 
@@ -427,6 +427,38 @@ for (const [ownerRole, ids] of aCorriger) {
 stats.roles = rolesAlignes;
 log(rolesAlignes ? ` ${rolesAlignes} rôle(s) alignés sur les plans\n` : ' rôles déjà conformes aux plans\n');
 
+// Combien d'avis distincts chaque cas demande. Deux sur les cas de calcul et de
+// cloisonnement, un seul ailleurs — et les plans en décident, dans les DEUX sens
+// comme pour le rôle : un marqueur retiré d'un énoncé ramène son cas à un avis.
+log('Avis     ');
+const attenduActuel = new Map((Array.isArray(casFinaux) ? casFinaux : []).map((c) => [c.id, c.verdictsExpected ?? 1]));
+
+const parObjectif = new Map();
+for (const c of payload.cases) {
+  const id = caseIdByRef.get(`${c.plan}/${c.ref}`);
+  const voulu = c.verdictsExpected ?? 1;
+  if (id && attenduActuel.get(id) !== voulu) {
+    if (!parObjectif.has(voulu)) {
+      parObjectif.set(voulu, []);
+    }
+    parObjectif.get(voulu).push(id);
+  }
+}
+
+let avisAlignes = 0;
+for (const [verdictsExpected, ids] of parObjectif) {
+  for (let i = 0; i < ids.length; i += PAQUET) {
+    const lot = ids.slice(i, i + PAQUET);
+    await api('PUT', '/cases/verdicts-expected', {
+      query: { projectId: project.id },
+      body: { caseIds: lot, verdictsExpected },
+    });
+    avisAlignes += lot.length;
+  }
+}
+stats.avis = avisAlignes;
+log(avisAlignes ? ` ${avisAlignes} objectif(s) d'avis alignés sur les plans\n` : " objectifs d'avis déjà conformes\n");
+
 // Rattachement des cas aux campagnes
 log('Rattach. ');
 for (const [wave, run] of runParVague) {
@@ -458,6 +490,7 @@ console.log(`  dossiers créés    ${stats.folders}`);
 console.log(`  cas créés         ${stats.cases}`);
 console.log(`  cas mis à jour    ${stats.updated}`);
 console.log(`  rôles alignés     ${stats.roles ?? 0}`);
+console.log(`  objectifs d'avis  ${stats.avis ?? 0}`);
 console.log(`  cas inchangés     ${stats.inchanges}`);
 console.log(`  campagnes créées  ${stats.runs}`);
 console.log(`  cas rattachés     ${stats.runCases}`);

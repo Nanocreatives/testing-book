@@ -37,6 +37,7 @@ import {
   UserCog,
   ListFilter,
   FlaskConical,
+  Users,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { NodeApi, Tree } from 'react-arborist';
@@ -120,6 +121,11 @@ export default function RunEditor({
   const [onlyRunCases, setOnlyRunCases] = useState<boolean>(true);
   const [siblingRuns, setSiblingRuns] = useState<RunType[]>([]);
   const [runStatusCounts, setRunStatusCounts] = useState<RunStatusCountType[]>([]);
+  // Le désaccord n'est PAS un sixième statut : un cas dont les avis divergent
+  // est déjà compté sous son statut agrégé. Le mettre en tranche le retirerait
+  // des échecs — donc il se lit à côté du camembert, pas dedans.
+  const [disagreeing, setDisagreeing] = useState<number>(0);
+  const [awaitingVerdicts, setAwaitingVerdicts] = useState<number>(0);
   const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set([]));
   const [selectedFolder, setSelectedFolder] = useState<TreeNodeData | null>(null);
   const [testCases, setTestCases] = useState<CaseType[]>([]);
@@ -196,9 +202,16 @@ export default function RunEditor({
   useFormGuard(isDirty, messages.areYouSureLeave, [`/projects/${projectId}/runs/${runId}/cases/\\d+`]);
 
   const fetchRunAndStatusCount = async () => {
-    const { run, statusCounts } = await fetchRun(tokenContext.token.access_token, Number(runId));
+    const {
+      run,
+      statusCounts,
+      disagreeing: diverging,
+      awaitingVerdicts: pending,
+    } = await fetchRun(tokenContext.token.access_token, Number(runId));
     setTestRun(run);
     setRunStatusCounts(statusCounts);
+    setDisagreeing(diverging ?? 0);
+    setAwaitingVerdicts(pending ?? 0);
     setGate(await fetchRunGate(tokenContext.token.access_token, Number(runId)));
   };
 
@@ -256,9 +269,7 @@ export default function RunEditor({
     try {
       const inScope = onlyRunCases ? testCases.filter(isCaseInRun) : testCases;
       setFilteredTestCases(
-        selectedFolder?.id
-          ? inScope.filter((testCase) => testCase.folderId.toString() === selectedFolder.id)
-          : inScope
+        selectedFolder?.id ? inScope.filter((testCase) => testCase.folderId.toString() === selectedFolder.id) : inScope
       );
     } catch (error: unknown) {
       logError('Error filtering test cases', error);
@@ -613,6 +624,30 @@ export default function RunEditor({
                 theme={theme}
               />
             </div>
+
+            {/* Deux états d'exception : tant qu'ils valent zéro, les afficher
+                n'apprendrait rien. Un seul testeur ne peut pas être en
+                désaccord avec lui-même. */}
+            {(disagreeing > 0 || awaitingVerdicts > 0) && (
+              <div className="w-96 rounded-medium border-medium border-default-200 p-3">
+                {disagreeing > 0 && (
+                  <div className="flex items-start gap-2">
+                    <Users size={16} className="mt-1 shrink-0 text-warning-600" />
+                    <div className="min-w-0">
+                      <p className="font-bold">
+                        {messages.disagreeing} · {disagreeing}
+                      </p>
+                      <p className="text-tiny text-default-600">{messages.disagreeingDetail}</p>
+                    </div>
+                  </div>
+                )}
+                {awaitingVerdicts > 0 && (
+                  <p className={`text-small text-default-600 ${disagreeing > 0 ? 'mt-2' : ''}`}>
+                    {messages.awaitingVerdicts} · {awaitingVerdicts}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex-grow">
             <Input

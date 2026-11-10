@@ -16,6 +16,7 @@ export default function SidebarLayout({
     testCases: t('test_cases'),
     testRuns: t('test_runs'),
     members: t('members'),
+    tracking: t('tracking'),
     settings: t('settings'),
   };
 

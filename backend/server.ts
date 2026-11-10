@@ -109,6 +109,8 @@ import casesIndexByProjectIdRoute from './routes/cases/indexByProjectId.js';
 import casesShowRoute from './routes/cases/show.js';
 import casesNewRoute from './routes/cases/new.js';
 import casesRoleRoute from './routes/cases/role.js';
+import casesVerdictsExpectedRoute from './routes/cases/verdictsExpected.js';
+import reportsRoute from './routes/reports/index.js';
 import casesEditRoute from './routes/cases/edit.js';
 import casesDeleteRoute from './routes/cases/delete.js';
 import casesCloneRoute from './routes/cases/clone.js';
@@ -120,6 +122,8 @@ app.use('/cases', casesIndexByProjectIdRoute(sequelize));
 app.use('/cases', casesShowRoute(sequelize));
 app.use('/cases', casesNewRoute(sequelize));
 app.use('/cases', casesRoleRoute(sequelize)); // "/role" must be before "/:caseId"
+app.use('/cases', casesVerdictsExpectedRoute(sequelize)); // idem for "/verdicts-expected"
+app.use('/reports', reportsRoute(sequelize));
 app.use('/cases', casesEditRoute(sequelize));
 app.use('/cases', casesDeleteRoute(sequelize));
 app.use('/cases', casesCloneRoute(sequelize));
