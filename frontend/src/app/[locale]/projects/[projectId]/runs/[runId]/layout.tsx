@@ -37,6 +37,7 @@ export default function RunLayout({
     status: t('status'),
     selectTestCase: t('select_test_case'),
     casesInRun: t('cases_in_run'),
+    blindVerdict: t('blind_verdict'),
     showAllProjectCases: t('show_all_project_cases'),
     showOnlyRunCases: t('show_only_run_cases'),
     switchRun: t('switch_run'),

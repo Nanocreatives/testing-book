@@ -374,6 +374,7 @@
     "actions": "Actions",
     "select_test_case": "Choisir des cas de test",
     "cases_in_run": "Les cas de cette campagne",
+    "blind_verdict": "Déjà jugé par quelqu'un d'autre. Son avis est masqué tant que tu n'as pas donné le tien — c'est ce qui rend l'accord entre testeurs significatif.",
     "show_all_project_cases": "Voir tous les cas du projet",
     "show_only_run_cases": "Voir seulement cette campagne",
     "switch_run": "Changer de campagne",

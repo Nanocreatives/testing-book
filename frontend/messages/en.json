@@ -374,6 +374,7 @@
     "actions": "Actions",
     "select_test_case": "Select test cases",
     "cases_in_run": "Cases in this run",
+    "blind_verdict": "Already judged by somebody else. Their verdict is hidden until you give yours — that is what makes agreement between testers meaningful.",
     "show_all_project_cases": "Show all project cases",
     "show_only_run_cases": "Show only this run",
     "switch_run": "Switch run",

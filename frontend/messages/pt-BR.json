@@ -374,6 +374,7 @@
     "actions": "Ações",
     "select_test_case": "Selecionar casos de teste",
     "cases_in_run": "Casos desta execução",
+    "blind_verdict": "Já julgado por outra pessoa. O veredicto dela fica oculto até você dar o seu — é isso que torna a concordância entre testadores significativa.",
     "show_all_project_cases": "Ver todos os casos do projeto",
     "show_only_run_cases": "Ver apenas esta execução",
     "switch_run": "Trocar de execução",

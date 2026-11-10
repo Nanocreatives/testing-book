@@ -374,6 +374,7 @@
     "actions": "操作",
     "select_test_case": "选择测试用例",
     "cases_in_run": "此测试运行的用例",
+    "blind_verdict": "已有他人判定。在你给出自己的判定前，对方的结果将被隐藏——这正是测试人员一致率有意义的前提。",
     "show_all_project_cases": "显示项目全部用例",
     "show_only_run_cases": "仅显示此测试运行",
     "switch_run": "切换测试运行",

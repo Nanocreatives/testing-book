@@ -374,6 +374,7 @@
     "actions": "Aktionen",
     "select_test_case": "Testfälle auswählen",
     "cases_in_run": "Fälle in diesem Durchlauf",
+    "blind_verdict": "Bereits von jemand anderem beurteilt. Das Urteil bleibt verborgen, bis Sie Ihres abgeben — nur so ist die Übereinstimmung zwischen Testern aussagekräftig.",
     "show_all_project_cases": "Alle Projektfälle anzeigen",
     "show_only_run_cases": "Nur diesen Durchlauf anzeigen",
     "switch_run": "Durchlauf wechseln",

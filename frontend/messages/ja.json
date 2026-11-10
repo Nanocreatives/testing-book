@@ -374,6 +374,7 @@
     "actions": "アクション",
     "select_test_case": "テストケースを選択",
     "cases_in_run": "このテスト実行のケース",
+    "blind_verdict": "他の人が既に判定しています。あなたが判定するまでその結果は伏せられます — これがテスター間の一致率に意味を与えます。",
     "show_all_project_cases": "プロジェクトの全ケースを表示",
     "show_only_run_cases": "このテスト実行のみ表示",
     "switch_run": "テスト実行を切り替え",
