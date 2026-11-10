@@ -1,16 +1,15 @@
 import express from 'express';
 const router = express.Router();
-import { DataTypes, literal } from 'sequelize';
+import { DataTypes } from 'sequelize';
 import defineRun from '../../models/runs.js';
-import defineRunCase from '../../models/runCases.js';
 import authMiddleware from '../../middleware/auth.js';
 import visibilityMiddleware from '../../middleware/verifyVisible.js';
+import { buildRunTally } from './runTally.js';
 
 export default function (sequelize) {
   const { verifySignedIn } = authMiddleware(sequelize);
   const { verifyProjectVisibleFromRunId } = visibilityMiddleware(sequelize);
   const Run = defineRun(sequelize, DataTypes);
-  const RunCase = defineRunCase(sequelize, DataTypes);
 
   router.get('/:runId', verifySignedIn, verifyProjectVisibleFromRunId, async (req, res) => {
     const runId = req.params.runId;
@@ -25,16 +24,14 @@ export default function (sequelize) {
         return res.status(404).send('Run not found');
       }
 
-      // Counts test case status belonging to the run
-      const statusCounts = await RunCase.findAll({
-        attributes: ['status', [literal('COUNT(*)'), 'count']],
-        where: {
-          runId: run.id,
-        },
-        group: ['status'],
-      });
+      // Le comptage se dérive des verdicts, et non du statut agrégé : il doit
+      // dire aussi combien de cas voient leurs testeurs diverger, et combien
+      // attendent encore un avis. Le désaccord n'est pas un sixième statut —
+      // les entiers stockés sont les index de `frontend/config/selection.ts`,
+      // en ajouter un décalerait toutes les valeurs déjà en base.
+      const { statusCounts, disagreeing, awaitingVerdicts } = await buildRunTally(sequelize, run.projectId, run.id);
 
-      res.json({ run, statusCounts });
+      res.json({ run, statusCounts, disagreeing, awaitingVerdicts });
     } catch (error) {
       console.error(error);
       res.status(500).send('Internal Server Error');
