@@ -218,7 +218,10 @@
     "not_comparable": "nicht vergleichbar",
     "not_comparable_hint": "Übereinstimmung wird nur bei Fällen gemessen, die mindestens zwei Personen beurteilt haben. Bisher gibt es keine.",
     "remaining": "Noch zu prüfen",
-    "no_data": "Noch nichts anzuzeigen."
+    "no_data": "Noch nichts anzuzeigen.",
+    "filter_by_status": "Nach Status filtern",
+    "filter_hint": "Beschränkt den gesamten Bericht — Zähler, Durchläufe und Mitglieder — auf Fälle mit dem angehakten Gesamtstatus.",
+    "clear_filter": "Alle anzeigen"
   },
   "Home": {
     "home": "Startseite",

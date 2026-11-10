@@ -218,7 +218,10 @@
     "not_comparable": "pas comparable",
     "not_comparable_hint": "L'accord ne se mesure que sur les cas qu'au moins deux personnes ont jugés. Il n'y en a aucun pour l'instant.",
     "remaining": "Reste à jouer",
-    "no_data": "Rien à afficher pour le moment."
+    "no_data": "Rien à afficher pour le moment.",
+    "filter_by_status": "Filtrer par statut",
+    "filter_hint": "Restreint tout le rapport — compteurs, campagnes et membres — aux cas dont le statut agrégé est coché.",
+    "clear_filter": "Tout afficher"
   },
   "Home": {
     "home": "Accueil",

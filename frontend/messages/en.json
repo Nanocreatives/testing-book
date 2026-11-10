@@ -218,7 +218,10 @@
     "not_comparable": "not comparable",
     "not_comparable_hint": "Agreement is only measured on cases at least two people judged. There are none yet.",
     "remaining": "Left to play",
-    "no_data": "Nothing to show yet."
+    "no_data": "Nothing to show yet.",
+    "filter_by_status": "Filter by status",
+    "filter_hint": "Restricts the whole report — counters, runs and members — to cases whose aggregate status is ticked.",
+    "clear_filter": "Show all"
   },
   "Home": {
     "home": "Home",

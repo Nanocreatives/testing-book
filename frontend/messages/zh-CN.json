@@ -218,7 +218,10 @@
     "not_comparable": "无法比较",
     "not_comparable_hint": "一致率仅在至少两人判定过的用例上计算。目前还没有。",
     "remaining": "待执行",
-    "no_data": "暂无可显示的内容。"
+    "no_data": "暂无可显示的内容。",
+    "filter_by_status": "按状态筛选",
+    "filter_hint": "将整个报告（计数、测试运行、成员）限定为汇总状态被勾选的用例。",
+    "clear_filter": "显示全部"
   },
   "Home": {
     "home": "首页",

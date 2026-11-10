@@ -20,7 +20,13 @@ const isEligible = (memberRole, ownerRole) => ownerRole === null || ownerRole ==
  * touched out of those they may play — which answers "where has nobody looked?"
  * instead of "who is fastest?".
  */
-export function buildTrackingReport({ cases, runCases, verdicts, members, runs }) {
+export function buildTrackingReport({ cases, runCases, verdicts, members, runs, statuses: wantedStatuses }) {
+  // Filtrer sur le statut AGRÉGÉ, celui que les listes montrent : filtrer sur
+  // les verdicts bruts rendrait un cas dont un seul avis correspond, ce qui
+  // n'est pas ce qu'on demande en cochant « Échoué ».
+  const keepsStatus = (status) =>
+    !Array.isArray(wantedStatuses) || wantedStatuses.length === 0 || wantedStatuses.includes(status);
+
   const caseById = new Map(cases.map((entry) => [entry.id, entry]));
   const runById = new Map(runs.map((entry) => [entry.id, entry]));
   const memberRoles = members.map((member) => member.role);
@@ -73,6 +79,9 @@ export function buildTrackingReport({ cases, runCases, verdicts, members, runs }
     const given = verdictsByRunCase.get(runCase.id) ?? [];
     const statuses = given.map((verdict) => verdict.status);
     const status = aggregateStatus(statuses) ?? UNTESTED;
+    if (!keepsStatus(status)) {
+      continue;
+    }
     const expected = testCase.verdictsExpected ?? 1;
     const eligibleCount = eligibleCountFor(testCase.ownerRole ?? null);
     const settled = isSettled(statuses.length, expected, eligibleCount);

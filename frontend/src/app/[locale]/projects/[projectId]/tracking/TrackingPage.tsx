@@ -1,16 +1,35 @@
 'use client';
 import { useContext, useEffect, useState } from 'react';
-import { Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tab, Tabs, Tooltip } from '@heroui/react';
-import { CircleHelp } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+  Tab,
+  Tabs,
+  Tooltip,
+  Badge,
+  Button,
+  Checkbox,
+  CheckboxGroup,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@heroui/react';
+import { CircleHelp, Filter } from 'lucide-react';
 import { fetchTrackingReport } from './trackingControl';
-import { memberRoles } from '@/config/selection';
+import { memberRoles, testRunCaseStatus } from '@/config/selection';
 import { TokenContext } from '@/utils/TokenProvider';
 import { logError } from '@/utils/errorHandler';
+import type { TestRunCaseStatusMessages } from '@/types/status';
 import type { TrackingMemberType, TrackingMessages, TrackingReportType, TrackingRoleType } from '@/types/tracking';
 
 type Props = {
   projectId: string;
   messages: TrackingMessages;
+  statusMessages: TestRunCaseStatusMessages;
 };
 
 const EMPTY: TrackingReportType = {
@@ -32,9 +51,11 @@ function HeaderWithHint({ label, hint }: { label: string; hint: string }) {
   );
 }
 
-export default function TrackingPage({ projectId, messages }: Props) {
+export default function TrackingPage({ projectId, messages, statusMessages }: Props) {
   const context = useContext(TokenContext);
   const [report, setReport] = useState<TrackingReportType>(EMPTY);
+  const [statuses, setStatuses] = useState<string[]>([]);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const isSignedIn = context.isSignedIn();
 
   useEffect(() => {
@@ -43,7 +64,7 @@ export default function TrackingPage({ projectId, messages }: Props) {
         return;
       }
       try {
-        setReport(await fetchTrackingReport(context.token.access_token, projectId));
+        setReport(await fetchTrackingReport(context.token.access_token, projectId, statuses.map(Number)));
       } catch (error: unknown) {
         logError('Error fetching tracking report:', error);
       }
@@ -51,7 +72,7 @@ export default function TrackingPage({ projectId, messages }: Props) {
 
     fetchDataEffect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSignedIn, projectId]);
+  }, [isSignedIn, projectId, statuses]);
 
   const roleLabel = (role: number) => {
     const uid = memberRoles[role] ? memberRoles[role].uid : '';
@@ -124,8 +145,37 @@ export default function TrackingPage({ projectId, messages }: Props) {
 
   return (
     <div className="container mx-auto max-w-5xl pt-6 px-6">
-      <h3 className="font-bold">{messages.title}</h3>
-      <p className="mt-1 text-small text-default-600">{messages.subtitle}</p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="font-bold">{messages.title}</h3>
+          <p className="mt-1 text-small text-default-600">{messages.subtitle}</p>
+        </div>
+
+        <Popover placement="bottom-end" isOpen={isFilterOpen} onOpenChange={setIsFilterOpen}>
+          <Badge color="danger" content={statuses.length} isInvisible={statuses.length === 0} shape="circle">
+            <PopoverTrigger>
+              <Button size="sm" variant="bordered" startContent={<Filter size={16} />}>
+                {messages.filterByStatus}
+              </Button>
+            </PopoverTrigger>
+          </Badge>
+          <PopoverContent className="items-start p-3">
+            <p className="max-w-xs text-tiny text-default-600">{messages.filterHint}</p>
+            <CheckboxGroup className="mt-2" size="sm" value={statuses} onValueChange={setStatuses}>
+              {testRunCaseStatus.map((entry, index) => (
+                <Checkbox key={entry.uid} value={String(index)}>
+                  {statusMessages[entry.uid]}
+                </Checkbox>
+              ))}
+            </CheckboxGroup>
+            {statuses.length > 0 && (
+              <Button size="sm" variant="light" className="mt-2" onPress={() => setStatuses([])}>
+                {messages.clearFilter}
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
+      </div>
 
       <Tabs aria-label={messages.title} className="mt-4">
         <Tab key="overall" title={messages.overall}>
