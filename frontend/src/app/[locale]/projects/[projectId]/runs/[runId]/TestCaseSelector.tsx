@@ -6,6 +6,7 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  Pagination,
   Button,
   DropdownTrigger,
   Dropdown,
@@ -48,6 +49,9 @@ type Props = {
   priorityMessages: PriorityMessages;
   testTypeMessages: TestTypeMessages;
 };
+
+/** Assez pour balayer une section, assez peu pour que le volet de détail reste en vue. */
+const ROWS_PER_PAGE = 25;
 
 export default function TestCaseSelector({
   projectId,
@@ -95,6 +99,7 @@ export default function TestCaseSelector({
     }
   }, [isDisabled]);
 
+  const [page, setPage] = useState(1);
   const [sortDescriptor, setSortDescriptor] = useState<SortDescriptor>({
     column: 'id',
     direction: 'ascending',
@@ -343,6 +348,12 @@ export default function TestCaseSelector({
     onSelectionChange(keys);
   };
 
+  // Une campagne de cent soixante-dix cas tient mal sur une page : on cherche
+  // un cas, on ne parcourt pas la liste.
+  const pageCount = Math.max(1, Math.ceil(sortedItems.length / ROWS_PER_PAGE));
+  const currentPage = Math.min(page, pageCount);
+  const pageItems = sortedItems.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
+
   return (
     <>
       <Table
@@ -368,7 +379,7 @@ export default function TestCaseSelector({
           )}
         </TableHeader>
         <TableBody emptyContent={messages.noCasesFound}>
-          {sortedItems.map((item) => (
+          {pageItems.map((item) => (
             <TableRow key={item.id} className={isCaseIncluded(item) ? '' : notIncludedCaseClass}>
               {headerColumns.map((column) => (
                 <TableCell key={column.uid}>{renderCell(item, column.uid)}</TableCell>
@@ -377,6 +388,20 @@ export default function TestCaseSelector({
           ))}
         </TableBody>
       </Table>
+
+      {pageCount > 1 && (
+        <div className="flex justify-center py-3">
+          <Pagination
+            isCompact
+            showControls
+            size="sm"
+            page={currentPage}
+            total={pageCount}
+            onChange={setPage}
+            aria-label={messages.selectTestCase}
+          />
+        </div>
+      )}
     </>
   );
 }

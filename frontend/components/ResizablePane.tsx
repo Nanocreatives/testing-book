@@ -54,7 +54,16 @@ export default function ResizablePanes({
   }, [isDragging, minLeftWidth, minRightWidth]);
 
   return (
-    <div ref={containerRef} className="flex h-full" style={{ userSelect: isDragging ? 'none' : 'auto' }}>
+    // Hauteur BORNÉE, et non `h-full` : aucun ancêtre ne borne la sienne — ils
+    // posent tous `min-h` — donc `overflow-auto` ne s'engageait jamais et la
+    // page entière défilait d'un bloc. Le volet de détail disparaissait alors
+    // dès qu'on descendait dans la liste. 64 px est la hauteur de l'en-tête,
+    // comme dans les layouts.
+    <div
+      ref={containerRef}
+      className="flex h-[calc(100vh-64px)]"
+      style={{ userSelect: isDragging ? 'none' : 'auto' }}
+    >
       <div
         className="border-r-1 dark:border-neutral-700 overflow-auto"
         style={{ width: `${leftWidth}%`, minWidth: `${minLeftWidth}%` }}

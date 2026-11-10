@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { NodeApi, Tree } from 'react-arborist';
+import { usePathname } from 'next/navigation';
 import {
   fetchRun,
   fetchRuns,
@@ -135,6 +136,7 @@ export default function RunEditor({
   const [blockingStage, setBlockingStage] = useState<StageType | null>(null);
   const [gate, setGate] = useState<RunGateType>({ role: null, blocking: [], blockedCaseIds: [], reporterBlocking: [] });
   const router = useRouter();
+  const pathname = usePathname();
   const isManager = tokenContext.isProjectManager(Number(projectId));
 
   // The path may put this run behind stages the reporter has not cleared. A
@@ -262,6 +264,16 @@ export default function RunEditor({
       logError('Error filtering test cases', error);
     }
   }, [selectedFolder, testCases, onlyRunCases]);
+
+  // `replace` et non `push` : la route nue n'a aucun intérêt dans l'historique,
+  // et y revenir par le bouton Retour relancerait la redirection en boucle.
+  useEffect(() => {
+    if (pathname.includes('/cases/')) return;
+    const first = scopedCases[0];
+    if (!first) return;
+    router.replace(`/projects/${projectId}/runs/${runId}/cases/${first.id}`, { locale: locale });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, scopedCases.length]);
 
   // Un dossier retenu qui sort du périmètre laisserait la liste vide sans
   // qu'aucun écran ne dise pourquoi.
