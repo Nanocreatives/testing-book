@@ -85,6 +85,10 @@ type RunMessages = {
   status: string;
   actions: string;
   selectTestCase: string;
+  casesInRun: string;
+  showAllProjectCases: string;
+  showOnlyRunCases: string;
+  switchRun: string;
   testCaseSelection: string;
   includeInRun: string;
   excludeFromRun: string;

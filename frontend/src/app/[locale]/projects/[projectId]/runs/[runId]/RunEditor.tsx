@@ -35,11 +35,14 @@ import {
   Filter,
   Lock,
   UserCog,
+  ListFilter,
+  FlaskConical,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { NodeApi, Tree } from 'react-arborist';
 import {
   fetchRun,
+  fetchRuns,
   updateRun,
   updateRunCases,
   fetchProjectCases,
@@ -72,6 +75,7 @@ import { MemberType } from '@/types/user';
 import { logError } from '@/utils/errorHandler';
 import TreeItem from '@/components/TreeItem';
 import { buildFolderTree } from '@/utils/buildFolderTree';
+import { isCaseInRun, pruneFoldersToCases } from '@/utils/runCaseScope';
 
 const defaultTestRun = {
   id: 0,
@@ -110,6 +114,10 @@ export default function RunEditor({
   const { theme } = useTheme();
   const [testRun, setTestRun] = useState<RunType>(defaultTestRun);
   const [treeData, setTreeData] = useState<TreeNodeData[]>([]);
+  // Entrer dans une campagne, c'est venir jouer SES cas. Les autres ne sont
+  // montrés que si on vient en composer une, ce que seul un rapporteur peut.
+  const [onlyRunCases, setOnlyRunCases] = useState<boolean>(true);
+  const [siblingRuns, setSiblingRuns] = useState<RunType[]>([]);
   const [runStatusCounts, setRunStatusCounts] = useState<RunStatusCountType[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set([]));
   const [selectedFolder, setSelectedFolder] = useState<TreeNodeData | null>(null);
@@ -222,12 +230,12 @@ export default function RunEditor({
       try {
         await fetchRunAndStatusCount();
         const foldersData = await fetchFolders(tokenContext.token.access_token, Number(projectId));
-        const tree = buildFolderTree(foldersData);
-        setTreeData(tree);
-        setSelectedFolder(foldersData[0]);
+        setTreeData(buildFolderTree(foldersData));
         initTestCases();
         const membersData = await fetchProjectMembersForRun(tokenContext.token.access_token, projectId);
         setMembers(membersData || []);
+        const runsData = await fetchRuns(tokenContext.token.access_token, Number(projectId));
+        setSiblingRuns(runsData || []);
       } catch (error: unknown) {
         logError('Error fetching run data', error);
       }
@@ -237,20 +245,34 @@ export default function RunEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSignedIn]);
 
-  useEffect(() => {
-    function onFilter() {
-      if (selectedFolder && selectedFolder.id) {
-        try {
-          const filteredData = testCases.filter((testCase) => testCase.folderId.toString() === selectedFolder.id);
-          setFilteredTestCases(filteredData);
-        } catch (error: unknown) {
-          logError('Error filtering test cases', error);
-        }
-      }
-    }
+  // Sans dossier choisi, on montrait une liste VIDE : il fallait deviner qu'un
+  // clic dans l'arbre était nécessaire. Le périmètre sert donc de repli.
+  const scopedCases = onlyRunCases ? testCases.filter(isCaseInRun) : testCases;
+  const scopedTree = onlyRunCases ? pruneFoldersToCases(treeData, scopedCases) : treeData;
 
-    onFilter();
-  }, [selectedFolder, testCases]);
+  useEffect(() => {
+    try {
+      const inScope = onlyRunCases ? testCases.filter(isCaseInRun) : testCases;
+      setFilteredTestCases(
+        selectedFolder?.id
+          ? inScope.filter((testCase) => testCase.folderId.toString() === selectedFolder.id)
+          : inScope
+      );
+    } catch (error: unknown) {
+      logError('Error filtering test cases', error);
+    }
+  }, [selectedFolder, testCases, onlyRunCases]);
+
+  // Un dossier retenu qui sort du périmètre laisserait la liste vide sans
+  // qu'aucun écran ne dise pourquoi.
+  useEffect(() => {
+    if (!selectedFolder?.id) return;
+    const stillPopulated = scopedCases.some((testCase) => testCase.folderId.toString() === selectedFolder.id);
+    if (!stillPopulated) {
+      setSelectedFolder(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onlyRunCases]);
 
   const handleChangeStatus = async (changeCaseId: number, newStatus: number) => {
     setIsDirty(true);
@@ -406,7 +428,30 @@ export default function RunEditor({
               <ArrowLeft size={16} />
             </Button>
           </Tooltip>
-          <h3 className="font-bold ms-2">{testRun.name}</h3>
+          {/* Le nom de la campagne EST le sélecteur : passer de l'une à l'autre
+              est le geste le plus fréquent, et repasser par la liste le coupe. */}
+          {siblingRuns.length > 1 ? (
+            <Dropdown>
+              <DropdownTrigger>
+                <Button variant="light" className="ms-2 font-bold" endContent={<ChevronDown size={16} />}>
+                  {testRun.name}
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu aria-label={messages.switchRun} disabledKeys={[String(testRun.id)]}>
+                {siblingRuns.map((run) => (
+                  <DropdownItem
+                    key={String(run.id)}
+                    startContent={<FlaskConical size={16} />}
+                    onPress={() => router.push(`/projects/${projectId}/runs/${run.id}`, { locale: locale })}
+                  >
+                    {run.name}
+                  </DropdownItem>
+                ))}
+              </DropdownMenu>
+            </Dropdown>
+          ) : (
+            <h3 className="font-bold ms-2">{testRun.name}</h3>
+          )}
         </div>
         <div className="flex items-center">
           <Popover placement="bottom" isOpen={showFilter} onOpenChange={(open) => setShowFilter(open)}>
@@ -632,9 +677,27 @@ export default function RunEditor({
         </div>
 
         <Divider className="my-6" />
-        <div className="flex items-center justify-between">
-          <h6 className="h-8 font-bold">{messages.selectTestCase}</h6>
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
+            <h6 className="h-8 font-bold">{onlyRunCases ? messages.casesInRun : messages.selectTestCase}</h6>
+            <span className="text-small text-default-500">{scopedCases.length}</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Composer une campagne demande de voir les cas qui n'y sont pas
+                encore ; les jouer demande de ne voir qu'elle. */}
+            {tokenContext.isProjectReporter(Number(projectId)) && (
+              <Button
+                size="sm"
+                variant="bordered"
+                startContent={onlyRunCases ? <ListFilter size={16} /> : <FlaskConical size={16} />}
+                onPress={() => {
+                  setSelectedKeys(new Set([]));
+                  setOnlyRunCases((only) => !only);
+                }}
+              >
+                {onlyRunCases ? messages.showAllProjectCases : messages.showOnlyRunCases}
+              </Button>
+            )}
             {(selectedKeys === 'all' || selectedKeys.size > 0) && (
               <>
                 {isManager && (
@@ -701,7 +764,7 @@ export default function RunEditor({
         <div className="mt-3 flex rounded-small border-2 dark:border-neutral-700 mb-12">
           <div className="w-3/12 border-r-1 dark:border-neutral-700">
             <Tree
-              data={treeData}
+              data={scopedTree}
               className="w-full"
               indent={16}
               rowHeight={42}
