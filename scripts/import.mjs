@@ -271,8 +271,32 @@ const toutLesCas = await api('GET', '/cases/byproject', {
 // le plan 14. Avec une clé sur le seul titre, les deux n'en font qu'un : ils
 // s'écrasent l'un l'autre à chaque import, et leur rattachement aux campagnes
 // désigne le mauvais cas.
-const cle = (folderId, titre) => `${folderId}/${titre}`;
-const casParCle = new Map((Array.isArray(toutLesCas) ? toutLesCas : []).map((c) => [cle(c.folderId, c.title), c]));
+const cle = (folderId, ref) => `${folderId}/${ref}`;
+
+// Rapprochés sur l'IDENTIFIANT, pas sur le titre. Le titre dérive de l'énoncé :
+// le reformuler en changeait la clé, et l'import créait alors un cas neuf en
+// abandonnant l'ancien — avec son statut, ses commentaires et ses pièces. Les
+// identifiants, eux, sont stables à vie (docs/conventions.md).
+const refDuTitre = (titre) => (titre ?? '').split(' — ')[0].trim();
+const casParCle = new Map();
+const doublons = [];
+
+// Des imports antérieurs ont pu laisser deux cas pour un même identifiant. On
+// garde celui qui porte un STATUT — c'est là qu'est le travail de la testeuse —
+// et à défaut le plus ancien. L'autre est signalé, jamais supprimé : il peut
+// porter des commentaires ou des pièces que seul un humain sait arbitrer.
+const aUnStatut = (c) => (c.RunCases ?? []).some((rc) => rc.status && rc.status !== 0);
+for (const c of Array.isArray(toutLesCas) ? toutLesCas : []) {
+  const k = cle(c.folderId, refDuTitre(c.title));
+  const garde = casParCle.get(k);
+  if (!garde) {
+    casParCle.set(k, c);
+    continue;
+  }
+  const remplace = aUnStatut(c) && !aUnStatut(garde);
+  casParCle.set(k, remplace ? c : garde);
+  doublons.push(remplace ? garde : c);
+}
 
 const ligneExcel = (c) => ({
   title: `${c.ref} — ${c.title}`.slice(0, 250),
@@ -333,17 +357,18 @@ for (const c of payload.cases) {
 }
 
 for (const [folderId, cas] of parSection) {
-  const nouveaux = cas.filter((c) => !casParCle.has(cle(folderId, `${c.ref} — ${c.title}`.slice(0, 250))));
+  const nouveaux = cas.filter((c) => !casParCle.has(cle(folderId, c.ref)));
   if (nouveaux.length) {
     await televerser(folderId, nouveaux.map(ligneExcel));
     stats.cases += nouveaux.length;
   }
   // Les cas déjà présents se mettent à jour un par un — ils sont rares après le
   // premier import, et la route groupée ne sait que créer.
-  for (const c of cas.filter((x) => casParCle.has(cle(folderId, `${x.ref} — ${x.title}`.slice(0, 250))))) {
-    const existant = casParCle.get(cle(folderId, `${c.ref} — ${c.title}`.slice(0, 250)));
+  for (const c of cas.filter((x) => casParCle.has(cle(folderId, x.ref)))) {
+    const existant = casParCle.get(cle(folderId, c.ref));
     const l = ligneExcel(c);
     const identique =
+      existant.title === l.title &&
       existant.description === l.description &&
       existant.priority === PRIORITIES.indexOf(l.priority) &&
       existant.type === TEST_TYPES.indexOf(l.type) &&
@@ -374,11 +399,13 @@ for (const [folderId, cas] of parSection) {
 
 // Relire une fois pour connaître les identifiants attribués aux nouveaux cas
 const casFinaux = await api('GET', '/cases/byproject', { query: { projectId: project.id, runId: runReference.id } });
-const idParCle = new Map((Array.isArray(casFinaux) ? casFinaux : []).map((c) => [cle(c.folderId, c.title), c.id]));
+const idParCle = new Map(
+  (Array.isArray(casFinaux) ? casFinaux : []).map((c) => [cle(c.folderId, refDuTitre(c.title)), c.id])
+);
 const caseIdByRef = new Map(
   payload.cases.map((c) => [
     `${c.plan}/${c.ref}`,
-    idParCle.get(cle(sectionFolder.get(`${c.plan}/${c.section}`).id, `${c.ref} — ${c.title}`.slice(0, 250))),
+    idParCle.get(cle(sectionFolder.get(`${c.plan}/${c.section}`).id, c.ref)),
   ])
 );
 const orphelins = [...caseIdByRef.entries()].filter(([, id]) => !id);
@@ -387,6 +414,22 @@ if (orphelins.length) {
   process.exit(1);
 }
 log(` ${stats.cases} créés, ${stats.updated} mis à jour, ${stats.inchanges} inchangés\n`);
+
+stats.doublons = doublons.length;
+if (doublons.length) {
+  console.log(
+    `\n⚠ ${doublons.length} cas en double, hérités d'un import antérieur qui rapprochait sur le titre.\n` +
+      '  Ils ne sont PAS supprimés : ils peuvent porter un statut, des commentaires ou des pièces.\n' +
+      '  À arbitrer à la main :'
+  );
+  for (const d of doublons.slice(0, 20)) {
+    console.log(`    #${d.id} ${d.title}`);
+  }
+  if (doublons.length > 20) {
+    console.log(`    … et ${doublons.length - 20} autres`);
+  }
+  console.log('');
+}
 
 // Les cas marqués 🛠 dans les plans demandent la base, le serveur ou la
 // configuration : ils reviennent à l'équipe technique, et l'interface les
@@ -491,6 +534,7 @@ console.log(`  cas créés         ${stats.cases}`);
 console.log(`  cas mis à jour    ${stats.updated}`);
 console.log(`  rôles alignés     ${stats.roles ?? 0}`);
 console.log(`  objectifs d'avis  ${stats.avis ?? 0}`);
+console.log(`  cas en double     ${stats.doublons ?? 0}`);
 console.log(`  cas inchangés     ${stats.inchanges}`);
 console.log(`  campagnes créées  ${stats.runs}`);
 console.log(`  cas rattachés     ${stats.runCases}`);
