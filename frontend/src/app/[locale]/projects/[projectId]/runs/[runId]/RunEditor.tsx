@@ -38,6 +38,7 @@ import {
   ListFilter,
   FlaskConical,
   Users,
+  ListTodo,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { NodeApi, Tree } from 'react-arborist';
@@ -126,6 +127,9 @@ export default function RunEditor({
   // des échecs — donc il se lit à côté du camembert, pas dedans.
   const [disagreeing, setDisagreeing] = useState<number>(0);
   const [awaitingVerdicts, setAwaitingVerdicts] = useState<number>(0);
+  // Ce qui reste à CETTE personne. Le total de la campagne ne le dit pas, et
+  // c'est pourtant le seul nombre qui lui dise quoi faire.
+  const [yoursToPlay, setYoursToPlay] = useState<number>(0);
   const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set([]));
   const [selectedFolder, setSelectedFolder] = useState<TreeNodeData | null>(null);
   const [testCases, setTestCases] = useState<CaseType[]>([]);
@@ -207,11 +211,13 @@ export default function RunEditor({
       statusCounts,
       disagreeing: diverging,
       awaitingVerdicts: pending,
+      yoursToPlay: mine,
     } = await fetchRun(tokenContext.token.access_token, Number(runId));
     setTestRun(run);
     setRunStatusCounts(statusCounts);
     setDisagreeing(diverging ?? 0);
     setAwaitingVerdicts(pending ?? 0);
+    setYoursToPlay(mine ?? 0);
     setGate(await fetchRunGate(tokenContext.token.access_token, Number(runId)));
   };
 
@@ -599,6 +605,18 @@ export default function RunEditor({
               </div>
             </div>
           )
+        )}
+
+        {/* Ce qui reste à faire passe AVANT l'avancement : un testeur qui arrive
+            cherche quoi jouer, pas où en est la campagne. */}
+        {yoursToPlay > 0 && (
+          <div className="mb-4 flex items-start gap-2 rounded-medium border-medium border-primary-300 bg-primary-50 p-3 dark:bg-primary-100">
+            <ListTodo size={16} className="mt-1 shrink-0 text-primary-600" />
+            <div className="min-w-0">
+              <p className="font-bold">{messages.yoursToPlay.replace('{n}', String(yoursToPlay))}</p>
+              <p className="text-small text-default-600">{messages.yoursToPlayHint}</p>
+            </div>
+          </div>
         )}
 
         <div className="flex">

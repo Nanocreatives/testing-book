@@ -3,7 +3,7 @@ import defineCase from '../../models/cases.js';
 import defineMember from '../../models/members.js';
 import defineRunCase from '../../models/runCases.js';
 import defineRunCaseVerdict from '../../models/runCaseVerdicts.js';
-import { tallyRun } from './verdictAggregate.js';
+import { isSettled, tallyRun } from './verdictAggregate.js';
 
 /**
  * How many project members may weigh in on a case owned by `ownerRole`.
@@ -26,7 +26,7 @@ function countEligible(memberRoles, ownerRole) {
  * verdicts and their folders in one go multiplies the rows, and the count comes
  * out wrong in a way nobody notices.
  */
-export async function buildRunTally(sequelize, projectId, runId) {
+export async function buildRunTally(sequelize, projectId, runId, viewerId) {
   const Case = defineCase(sequelize, DataTypes);
   const Member = defineMember(sequelize, DataTypes);
   const RunCase = defineRunCase(sequelize, DataTypes);
@@ -38,7 +38,7 @@ export async function buildRunTally(sequelize, projectId, runId) {
   });
 
   if (runCases.length === 0) {
-    return { statusCounts: [], disagreeing: 0, awaitingVerdicts: 0 };
+    return { statusCounts: [], disagreeing: 0, awaitingVerdicts: 0, yoursToPlay: 0 };
   }
 
   const [cases, verdicts, members] = await Promise.all([
@@ -55,6 +55,7 @@ export async function buildRunTally(sequelize, projectId, runId) {
 
   const caseById = new Map(cases.map((entry) => [entry.id, entry]));
   const memberRoles = members.map((member) => member.role);
+  const viewerRole = members.find((member) => member.userId === viewerId)?.role ?? null;
 
   const statusesByRunCase = new Map();
   for (const verdict of verdicts) {
@@ -63,7 +64,27 @@ export async function buildRunTally(sequelize, projectId, runId) {
     statusesByRunCase.set(verdict.runCaseId, bucket);
   }
 
-  return tallyRun(
+  // Ce qui reste à CETTE personne : un cas qu'elle peut jouer, sur lequel elle
+  // ne s'est pas prononcée, et qui attend encore un avis. C'est le seul nombre
+  // qui lui dise quoi faire ; le total de la campagne ne le dit pas.
+  let yoursToPlay = 0;
+  for (const runCase of runCases) {
+    const testCase = caseById.get(runCase.caseId);
+    if (!testCase) {
+      continue;
+    }
+    const ownerRole = testCase.ownerRole ?? null;
+    if (ownerRole !== null && viewerRole !== ownerRole) {
+      continue;
+    }
+    const given = statusesByRunCase.get(runCase.id) ?? [];
+    const mine = (verdicts ?? []).some((verdict) => verdict.runCaseId === runCase.id && verdict.userId === viewerId);
+    if (!mine && !isSettled(given.length, testCase.verdictsExpected ?? 1, countEligible(memberRoles, ownerRole))) {
+      yoursToPlay += 1;
+    }
+  }
+
+  const tally = tallyRun(
     runCases.map((runCase) => {
       const testCase = caseById.get(runCase.caseId);
       return {
@@ -73,4 +94,6 @@ export async function buildRunTally(sequelize, projectId, runId) {
       };
     })
   );
+
+  return { ...tally, yoursToPlay };
 }

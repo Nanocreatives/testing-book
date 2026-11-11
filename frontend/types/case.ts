@@ -47,8 +47,6 @@ type RunCaseType = {
   editState: 'notChanged' | 'changed' | 'new' | 'deleted';
   commentCount?: number;
   assigneeUserId: number | null;
-  /** Le verdict d'autrui est retiré tant qu'on n'a pas posé le sien. */
-  blind?: boolean;
 };
 
 type CaseAttachmentType = {

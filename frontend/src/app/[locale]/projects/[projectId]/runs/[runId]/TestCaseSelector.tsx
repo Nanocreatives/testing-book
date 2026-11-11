@@ -16,7 +16,7 @@ import {
   SortDescriptor,
   Chip,
 } from '@heroui/react';
-import { MoreVertical, CopyPlus, CopyMinus, MessageCircle, Lock, EyeOff } from 'lucide-react';
+import { MoreVertical, CopyPlus, CopyMinus, MessageCircle, Lock } from 'lucide-react';
 import RunCaseStatus from './RunCaseStatus';
 import AssigneePicker from './AssigneePicker';
 import { Link, NextUiLinkClasses } from '@/src/i18n/routing';
@@ -163,7 +163,6 @@ export default function TestCaseSelector({
   const renderCell = (testCase: CaseType, columnKey: string): ReactNode => {
     const cellValue = testCase[columnKey as keyof CaseType];
     const isIncluded = isCaseIncluded(testCase);
-    const isBlind = Boolean(testCase.RunCases?.[0]?.blind);
     // Held back by work that belongs to someone else, and placed before this one.
     const isBlocked = blockedCaseIds.includes(testCase.id);
     const runStatus = testCase.RunCases && testCase.RunCases.length > 0 ? testCase.RunCases[0].status : 0;
@@ -223,25 +222,13 @@ export default function TestCaseSelector({
                 title={
                   isBlocked
                     ? messages.caseBlocked
-                    : isBlind
-                      ? messages.blindVerdict
-                      : isIncluded
-                        ? testRunCaseStatusMessages[testRunCaseStatus[runStatus].uid]
-                        : undefined
+                    : isIncluded
+                      ? testRunCaseStatusMessages[testRunCaseStatus[runStatus].uid]
+                      : undefined
                 }
                 isDisabled={!isIncluded || isBlocked}
               >
-                {/* Un cas déjà jugé par un autre ne se montre pas « non testé » :
-                    ce serait faire croire que personne n'a regardé. */}
-                {isIncluded ? (
-                  isBlind ? (
-                    <EyeOff size={16} className="text-default-500" />
-                  ) : (
-                    <RunCaseStatus uid={testRunCaseStatus[runStatus].uid} />
-                  )
-                ) : (
-                  '-'
-                )}
+                {isIncluded ? <RunCaseStatus uid={testRunCaseStatus[runStatus].uid} /> : '-'}
               </Button>
             </DropdownTrigger>
             <DropdownMenu disabledKeys={disabledStatusKeys} aria-label="test case actions">

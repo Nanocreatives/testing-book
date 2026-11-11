@@ -29,9 +29,14 @@ export default function (sequelize) {
       // attendent encore un avis. Le désaccord n'est pas un sixième statut —
       // les entiers stockés sont les index de `frontend/config/selection.ts`,
       // en ajouter un décalerait toutes les valeurs déjà en base.
-      const { statusCounts, disagreeing, awaitingVerdicts } = await buildRunTally(sequelize, run.projectId, run.id);
+      const { statusCounts, disagreeing, awaitingVerdicts, yoursToPlay } = await buildRunTally(
+        sequelize,
+        run.projectId,
+        run.id,
+        req.userId
+      );
 
-      res.json({ run, statusCounts, disagreeing, awaitingVerdicts });
+      res.json({ run, statusCounts, disagreeing, awaitingVerdicts, yoursToPlay });
     } catch (error) {
       console.error(error);
       res.status(500).send('Internal Server Error');

@@ -20,8 +20,6 @@ type RunCaseType = {
   createdAt: string;
   updatedAt: string;
   assigneeUserId: number | null;
-  /** Le verdict d'autrui est retiré tant qu'on n'a pas posé le sien. */
-  blind?: boolean;
 };
 
 type RunStatusCountType = {
@@ -91,7 +89,8 @@ type RunMessages = {
   actions: string;
   selectTestCase: string;
   casesInRun: string;
-  blindVerdict: string;
+  yoursToPlay: string;
+  yoursToPlayHint: string;
   showAllProjectCases: string;
   showOnlyRunCases: string;
   switchRun: string;
