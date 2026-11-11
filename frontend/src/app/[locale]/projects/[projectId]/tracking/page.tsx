@@ -3,6 +3,7 @@ import { useTranslations } from 'next-intl';
 import TrackingPage from './TrackingPage';
 import { LocaleCodeType } from '@/types/locale';
 import { TrackingMessages } from '@/types/tracking';
+import { TestRunCaseStatusMessages } from '@/types/status';
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: LocaleCodeType } }) {
   const t = await getTranslations({ locale, namespace: 'Tracking' });
@@ -15,6 +16,7 @@ export async function generateMetadata({ params: { locale } }: { params: { local
 export default function Page({ params }: { params: { projectId: string } }) {
   const t = useTranslations('Tracking');
   const m = useTranslations('Members');
+  const s = useTranslations('RunCaseStatus');
 
   const messages: TrackingMessages = {
     title: t('title'),
@@ -40,10 +42,21 @@ export default function Page({ params }: { params: { projectId: string } }) {
     notComparableHint: t('not_comparable_hint'),
     remaining: t('remaining'),
     noData: t('no_data'),
+    filterByStatus: t('filter_by_status'),
+    filterHint: t('filter_hint'),
+    clearFilter: t('clear_filter'),
     manager: m('manager'),
     developer: m('developer'),
     reporter: m('reporter'),
   };
 
-  return <TrackingPage projectId={params.projectId} messages={messages} />;
+  const statusMessages: TestRunCaseStatusMessages = {
+    untested: s('untested'),
+    passed: s('passed'),
+    failed: s('failed'),
+    retest: s('retest'),
+    skipped: s('skipped'),
+  };
+
+  return <TrackingPage projectId={params.projectId} messages={messages} statusMessages={statusMessages} />;
 }

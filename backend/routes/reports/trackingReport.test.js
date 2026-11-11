@@ -13,11 +13,12 @@ const BRUNO = 12;
 const CHANTAL = 13;
 
 /** Un projet minimal : deux campagnes, trois membres, des cas qu'on choisit. */
-const build = ({ cases, runCases, verdicts, members = null }) =>
+const build = ({ cases, runCases, verdicts, members = null, statuses = undefined }) =>
   buildTrackingReport({
     cases,
     runCases,
     verdicts,
+    statuses,
     members: members ?? [
       { userId: ANNE, username: 'Anne', role: REPORTER },
       { userId: BRUNO, username: 'Bruno', role: REPORTER },
@@ -211,5 +212,68 @@ describe('buildTrackingReport — par rôle', () => {
     });
 
     expect(report.byRole.map((group) => group.role)).toEqual([MANAGER]);
+  });
+});
+
+describe('buildTrackingReport — filtre de statut', () => {
+  const deuxCas = {
+    cases: [
+      { id: 1, ownerRole: null, verdictsExpected: 1 },
+      { id: 2, ownerRole: null, verdictsExpected: 1 },
+    ],
+    runCases: [
+      { id: 100, runId: 1, caseId: 1 },
+      { id: 200, runId: 1, caseId: 2 },
+    ],
+    verdicts: [
+      { runCaseId: 100, userId: ANNE, status: PASSED },
+      { runCaseId: 200, userId: ANNE, status: FAILED },
+    ],
+  };
+
+  it('ne filtre rien sans liste de statuts', () => {
+    expect(build(deuxCas).overall.cases).toBe(2);
+    expect(build({ ...deuxCas, statuses: [] }).overall.cases).toBe(2);
+  });
+
+  it('ne garde que les cas du statut demandé', () => {
+    const report = build({ ...deuxCas, statuses: [FAILED] });
+    expect(report.overall.cases).toBe(1);
+    expect(report.overall.statusCounts).toEqual([{ status: FAILED, count: 1 }]);
+  });
+
+  it('filtre sur le statut AGRÉGÉ, pas sur un verdict isolé', () => {
+    // Un avis « réussi » existe sur ce cas, mais l'échec l'emporte : cocher
+    // « Réussi » ne doit pas le faire apparaître.
+    const report = build({
+      cases: [{ id: 1, ownerRole: null, verdictsExpected: 2 }],
+      runCases: [{ id: 100, runId: 1, caseId: 1 }],
+      verdicts: [
+        { runCaseId: 100, userId: ANNE, status: PASSED },
+        { runCaseId: 100, userId: BRUNO, status: FAILED },
+      ],
+      statuses: [PASSED],
+    });
+
+    expect(report.overall.cases).toBe(0);
+  });
+
+  it('restreint aussi la couverture et le reste à jouer', () => {
+    const report = build({ ...deuxCas, statuses: [FAILED] });
+    const anne = report.byMember.find((member) => member.userId === ANNE);
+    // Anne n'a touché la campagne 1 que par un cas échoué : il reste compté.
+    expect(anne).toMatchObject({ runsTouched: 1, runsEligible: 1 });
+  });
+
+  it('laisse voir les cas que personne n’a joués', () => {
+    const report = build({
+      cases: [{ id: 1, ownerRole: null, verdictsExpected: 1 }],
+      runCases: [{ id: 100, runId: 1, caseId: 1 }],
+      verdicts: [],
+      statuses: [0],
+    });
+
+    expect(report.overall.cases).toBe(1);
+    expect(report.overall.played).toBe(0);
   });
 });

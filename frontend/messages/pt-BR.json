@@ -218,7 +218,10 @@
     "not_comparable": "não comparável",
     "not_comparable_hint": "A concordância só se mede em casos julgados por ao menos duas pessoas. Ainda não há nenhum.",
     "remaining": "A jogar",
-    "no_data": "Nada a exibir por enquanto."
+    "no_data": "Nada a exibir por enquanto.",
+    "filter_by_status": "Filtrar por status",
+    "filter_hint": "Restringe todo o relatório — contadores, execuções e membros — aos casos cujo status agregado está marcado.",
+    "clear_filter": "Mostrar tudo"
   },
   "Home": {
     "home": "Início",

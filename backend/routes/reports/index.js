@@ -27,6 +27,14 @@ export default function (sequelize) {
   router.get('/tracking/:projectId', verifySignedIn, verifyProjectVisibleFromProjectId, async (req, res) => {
     const projectId = req.params.projectId;
 
+    // `?status=1,2` restreint tout le rapport — compteurs, campagnes, membres —
+    // aux cas dont le statut agrégé est dans la liste. Vide ou absent, rien
+    // n'est filtré.
+    const wantedStatuses = (req.query.status ?? '')
+      .split(',')
+      .map((value) => parseInt(value.trim(), 10))
+      .filter((value) => Number.isInteger(value));
+
     try {
       // Des requêtes séparées, une jointure chacune. Deux branches `hasMany`
       // dans une seule requête font un produit cartésien : sur un projet de
@@ -87,6 +95,7 @@ export default function (sequelize) {
             role: member.role,
           })),
           runs: runs.map((run) => ({ id: run.id, name: run.name })),
+          statuses: wantedStatuses,
         })
       );
     } catch (error) {
