@@ -280,6 +280,8 @@ const cle = (folderId, ref) => `${folderId}/${ref}`;
 const refDuTitre = (titre) => (titre ?? '').split(' — ')[0].trim();
 const casParCle = new Map();
 const doublons = [];
+// Les cas déjà joués dont le texte change : signalés, jamais réinitialisés.
+const joues = [];
 
 // Des imports antérieurs ont pu laisser deux cas pour un même identifiant. On
 // garde celui qui porte un STATUT — c'est là qu'est le travail de la testeuse —
@@ -378,6 +380,9 @@ for (const [folderId, cas] of parSection) {
       stats.inchanges += 1;
       continue;
     }
+    if (aUnStatut(existant)) {
+      joues.push({ id: existant.id, titre: l.title, ref: c.ref, plan: c.plan });
+    }
     await api('PUT', `/cases/${existant.id}`, {
       query: { folderId },
       body: {
@@ -414,6 +419,23 @@ if (orphelins.length) {
   process.exit(1);
 }
 log(` ${stats.cases} créés, ${stats.updated} mis à jour, ${stats.inchanges} inchangés\n`);
+
+stats.joues = joues.length;
+if (joues.length) {
+  console.log(
+    `\n⚠ ${joues.length} cas DÉJÀ JOUÉS ont vu leur énoncé, leurs préconditions ou leur attendu changer.\n` +
+      '  Les avis déjà posés répondaient donc à une autre question.\n' +
+      "  Rien n'est réinitialisé : une correction de forme ne vaut pas un rejeu, un changement de fond si.\n" +
+      '  À arbitrer, puis « Remettre à faire » sur ceux qui le méritent :'
+  );
+  for (const j of joues.slice(0, 20)) {
+    console.log(`    ${j.plan}/${j.ref} — ${j.titre.slice(0, 80)}`);
+  }
+  if (joues.length > 20) {
+    console.log(`    … et ${joues.length - 20} autres`);
+  }
+  console.log('');
+}
 
 stats.doublons = doublons.length;
 if (doublons.length) {
@@ -535,6 +557,7 @@ console.log(`  cas mis à jour    ${stats.updated}`);
 console.log(`  rôles alignés     ${stats.roles ?? 0}`);
 console.log(`  objectifs d'avis  ${stats.avis ?? 0}`);
 console.log(`  cas en double     ${stats.doublons ?? 0}`);
+console.log(`  joués & modifiés  ${stats.joues ?? 0}`);
 console.log(`  cas inchangés     ${stats.inchanges}`);
 console.log(`  campagnes créées  ${stats.runs}`);
 console.log(`  cas rattachés     ${stats.runCases}`);

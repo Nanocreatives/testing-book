@@ -18,6 +18,11 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
 } from '@heroui/react';
 import {
   Save,
@@ -39,6 +44,7 @@ import {
   FlaskConical,
   Users,
   ListTodo,
+  RotateCcw,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { NodeApi, Tree } from 'react-arborist';
@@ -46,6 +52,8 @@ import { usePathname } from 'next/navigation';
 import {
   fetchRun,
   fetchRuns,
+  fetchRunCaseVerdicts,
+  resetRunCases,
   updateRun,
   updateRunCases,
   fetchProjectCases,
@@ -121,6 +129,9 @@ export default function RunEditor({
   // montrés que si on vient en composer une, ce que seul un rapporteur peut.
   const [onlyRunCases, setOnlyRunCases] = useState<boolean>(true);
   const [siblingRuns, setSiblingRuns] = useState<RunType[]>([]);
+  const [resetTargets, setResetTargets] = useState<number[] | null>(null);
+  const [resetVerdicts, setResetVerdicts] = useState<{ username: string }[]>([]);
+  const [isResetting, setIsResetting] = useState(false);
   const [runStatusCounts, setRunStatusCounts] = useState<RunStatusCountType[]>([]);
   // Le désaccord n'est PAS un sixième statut : un cas dont les avis divergent
   // est déjà compté sous son statut agrégé. Le mettre en tranche le retirerait
@@ -302,6 +313,47 @@ export default function RunEditor({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onlyRunCases]);
+
+  /**
+   * La liste déroulante de statut ne retire QUE l'avis de qui l'utilise. Juste
+   * quand on joue, faux quand un énoncé a changé et qu'il faut tout rejouer :
+   * le gestionnaire efface alors les avis de tout le monde, et la modale les
+   * nomme d'abord.
+   */
+  const openResetDialog = async () => {
+    const ids =
+      selectedKeys === 'all'
+        ? filteredTestCases.map((entry) => entry.RunCases?.[0]?.id).filter((id): id is number => Boolean(id))
+        : Array.from(selectedKeys)
+            .map((key) => testCases.find((entry) => entry.id === Number(key))?.RunCases?.[0]?.id)
+            .filter((id): id is number => Boolean(id));
+    if (ids.length === 0) return;
+    setResetTargets(ids);
+    try {
+      setResetVerdicts(await fetchRunCaseVerdicts(tokenContext.token.access_token, Number(runId), ids));
+    } catch (error: unknown) {
+      logError('Error reading verdicts:', error);
+      setResetVerdicts([]);
+    }
+  };
+
+  const confirmReset = async () => {
+    if (!resetTargets) return;
+    setIsResetting(true);
+    try {
+      await resetRunCases(tokenContext.token.access_token, Number(runId), resetTargets);
+      addToast({ title: messages.resetDone, color: 'success' });
+      setSelectedKeys(new Set([]));
+      setResetTargets(null);
+      await fetchRunAndStatusCount();
+      await initTestCases();
+    } catch (error: unknown) {
+      addToast({ title: 'Error', color: 'danger', description: messages.resetError });
+      logError('Error resetting run cases:', error);
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const handleChangeStatus = async (changeCaseId: number, newStatus: number) => {
     setIsDirty(true);
@@ -777,6 +829,17 @@ export default function RunEditor({
                     onAssign={(userId) => handleBulkAssignCases(userId)}
                   />
                 )}
+                {isManager && (
+                  <Button
+                    size="sm"
+                    variant="bordered"
+                    color="warning"
+                    startContent={<RotateCcw size={16} />}
+                    onPress={openResetDialog}
+                  >
+                    {messages.resetToDo}
+                  </Button>
+                )}
                 {tokenContext.isProjectDeveloper(Number(projectId)) && (
                   <Dropdown>
                     <DropdownTrigger>
@@ -896,6 +959,39 @@ export default function RunEditor({
           </div>
         </div>
       </div>
+
+      {/* Nommer les personnes AVANT d'effacer : supprimer le travail de
+          quelqu'un ne doit jamais arriver par surprise. */}
+      <Modal isOpen={resetTargets !== null} onOpenChange={() => setResetTargets(null)} size="lg">
+        <ModalContent>
+          <ModalHeader>{messages.resetTitle}</ModalHeader>
+          <ModalBody>
+            <p className="text-small text-default-600">{messages.resetWarning}</p>
+            {resetVerdicts.length === 0 ? (
+              <p className="text-small">{messages.resetNobody}</p>
+            ) : (
+              <>
+                <p className="mt-2 font-bold">
+                  {messages.resetWhose} · {resetVerdicts.length}
+                </p>
+                <ul className="text-small">
+                  {Array.from(new Set(resetVerdicts.map((verdict) => verdict.username || '—'))).map((nom) => (
+                    <li key={nom}>{nom}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button size="sm" variant="light" onPress={() => setResetTargets(null)}>
+              {messages.close}
+            </Button>
+            <Button size="sm" color="danger" isLoading={isResetting} onPress={confirmReset}>
+              {messages.resetConfirm}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </>
   );
 }

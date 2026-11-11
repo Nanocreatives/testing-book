@@ -468,7 +468,35 @@ async function fetchProjectMembersForRun(jwt: string, projectId: string) {
   }
 }
 
+/** Qui a jugé ces cas — pour que la modale le dise AVANT d'effacer. */
+async function fetchRunCaseVerdicts(jwt: string, runId: number, runCaseIds: number[]) {
+  const url = `${apiServer}/runcases/verdicts?runId=${runId}&runCaseIds=${runCaseIds.join(',')}`;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` },
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`);
+  }
+  return response.json();
+}
+
+/** Efface TOUS les avis des cas visés et les remet à « non testé ». */
+async function resetRunCases(jwt: string, runId: number, runCaseIds: number[]) {
+  const response = await fetch(`${apiServer}/runcases/verdicts?runId=${runId}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${jwt}` },
+    body: JSON.stringify({ runCaseIds }),
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`);
+  }
+  return response.json();
+}
+
 export {
+  fetchRunCaseVerdicts,
+  resetRunCases,
   fetchRun,
   fetchRuns,
   createRun,

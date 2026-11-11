@@ -89,6 +89,14 @@ type RunMessages = {
   actions: string;
   selectTestCase: string;
   casesInRun: string;
+  resetToDo: string;
+  resetTitle: string;
+  resetWarning: string;
+  resetNobody: string;
+  resetWhose: string;
+  resetConfirm: string;
+  resetDone: string;
+  resetError: string;
   yoursToPlay: string;
   yoursToPlayHint: string;
   showAllProjectCases: string;
