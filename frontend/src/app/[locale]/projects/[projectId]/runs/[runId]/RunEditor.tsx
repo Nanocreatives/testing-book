@@ -829,6 +829,7 @@ export default function RunEditor({
                 isDisabled={isLocked || !tokenContext.isProjectReporter(Number(projectId))}
                 blockedCaseIds={gate.blockedCaseIds}
                 isManager={isManager}
+                viewerId={tokenContext.token.user?.id ?? null}
                 members={members}
                 selectedKeys={selectedKeys}
                 onSelectionChange={setSelectedKeys}

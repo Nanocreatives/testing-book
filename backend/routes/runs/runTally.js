@@ -48,9 +48,12 @@ export async function buildRunTally(sequelize, projectId, runId, viewerId) {
     }),
     RunCaseVerdict.findAll({
       where: { runCaseId: { [Op.in]: runCases.map((runCase) => runCase.id) } },
-      attributes: ['runCaseId', 'status'],
+      // `userId` est lu plus bas pour savoir ce qui reste à CETTE personne :
+      // l'omettre des colonnes le rend `undefined` sans erreur, et le compte
+      // sort faux en silence.
+      attributes: ['runCaseId', 'userId', 'status'],
     }),
-    Member.findAll({ where: { projectId: projectId }, attributes: ['role'] }),
+    Member.findAll({ where: { projectId: projectId }, attributes: ['userId', 'role'] }),
   ]);
 
   const caseById = new Map(cases.map((entry) => [entry.id, entry]));

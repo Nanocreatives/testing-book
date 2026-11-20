@@ -120,6 +120,11 @@ type RunMessages = {
   clearAll: string;
   apply: string;
   selectStatus: string;
+  judgedBy: string;
+  judgedByYou: string;
+  verdictsDiverge: string;
+  commentedBy: string;
+  unknownUser: string;
   pleaseSave: string;
   caseTitleOrDescription: string;
   selected: string;
