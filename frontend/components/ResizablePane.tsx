@@ -7,6 +7,8 @@ type Props = {
   minLeftWidth?: number;
   minRightWidth?: number;
   defaultLeftWidth?: number;
+  /** Hauteur du conteneur. Par défaut la fenêtre, moins l'en-tête. */
+  heightClassName?: string;
 };
 
 export default function ResizablePanes({
@@ -15,6 +17,7 @@ export default function ResizablePanes({
   minLeftWidth = 40,
   minRightWidth = 15,
   defaultLeftWidth = 70,
+  heightClassName = 'h-[calc(100vh-64px)]',
 }: Props) {
   const [leftWidth, setLeftWidth] = useState(defaultLeftWidth); // default 70%
   const [isDragging, setIsDragging] = useState(false);
@@ -54,16 +57,9 @@ export default function ResizablePanes({
   }, [isDragging, minLeftWidth, minRightWidth]);
 
   return (
-    // Hauteur BORNÉE, et non `h-full` : aucun ancêtre ne borne la sienne — ils
-    // posent tous `min-h` — donc `overflow-auto` ne s'engageait jamais et la
-    // page entière défilait d'un bloc. Le volet de détail disparaissait alors
-    // dès qu'on descendait dans la liste. 64 px est la hauteur de l'en-tête,
-    // comme dans les layouts.
-    <div
-      ref={containerRef}
-      className="flex h-[calc(100vh-64px)]"
-      style={{ userSelect: isDragging ? 'none' : 'auto' }}
-    >
+    // Hauteur bornée, jamais `h-full` : aucun ancêtre ne borne la sienne, donc
+    // `overflow-auto` ne s'engagerait pas. 64 px est la hauteur de l'en-tête.
+    <div ref={containerRef} className={`flex ${heightClassName}`} style={{ userSelect: isDragging ? 'none' : 'auto' }}>
       <div
         className="border-r-1 dark:border-neutral-700 overflow-auto"
         style={{ width: `${leftWidth}%`, minWidth: `${minLeftWidth}%` }}

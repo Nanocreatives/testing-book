@@ -73,10 +73,8 @@ export default function TestCaseSelector({
   priorityMessages,
 }: Props) {
   const headerColumns = [
-    { name: messages.id, uid: 'id', sortable: true },
     { name: messages.title, uid: 'title', sortable: true },
     { name: messages.priority, uid: 'priority', sortable: true },
-    { name: messages.tags, uid: 'tags', sortable: false },
     { name: messages.status, uid: 'runStatus', sortable: true },
     { name: messages.assignee, uid: 'assignee', sortable: true },
     { name: messages.comments, uid: 'comments', sortable: false },
@@ -171,11 +169,11 @@ export default function TestCaseSelector({
     switch (columnKey) {
       case 'title':
         return (
-          <div className={isIncluded ? '' : notIncludedCaseClass}>
+          <div className={`min-w-[10rem] ${isIncluded ? '' : notIncludedCaseClass}`}>
             <Link
               href={`/projects/${projectId}/runs/${runId}/cases/${testCase.id}`}
               locale={locale}
-              className={`${NextUiLinkClasses} block max-w-24 truncate`}
+              className={`${NextUiLinkClasses} line-clamp-2`}
               onPointerDown={(e) => e.stopPropagation()}
             >
               {cellValue as string}
@@ -194,20 +192,6 @@ export default function TestCaseSelector({
         return (
           <div className={isIncluded ? '' : notIncludedCaseClass}>
             <TestCasePriority priorityValue={cellValue as number} priorityMessages={priorityMessages} />
-          </div>
-        );
-      case 'tags':
-        return (
-          <div className={`flex gap-1 flex-wrap ${isIncluded ? '' : notIncludedCaseClass}`}>
-            {testCase.Tags && testCase.Tags.length > 0 ? (
-              testCase.Tags.map((tag) => (
-                <Chip key={tag.id} size="sm" variant="flat">
-                  {tag.name}
-                </Chip>
-              ))
-            ) : (
-              <span>-</span>
-            )}
           </div>
         );
       case 'runStatus':
@@ -327,9 +311,10 @@ export default function TestCaseSelector({
 
   const classNames = useMemo(
     () => ({
-      wrapper: ['min-w-3xl'],
-      th: ['bg-transparent', 'text-default-500', 'border-b', 'border-divider'],
+      wrapper: ['min-w-0'],
+      th: ['bg-transparent', 'text-default-500', 'border-b', 'border-divider', 'px-2'],
       td: [
+        'px-2',
         // changing the rows border radius
         // first
         'group-data-[first=true]:first:before:rounded-none',

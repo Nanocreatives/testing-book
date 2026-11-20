@@ -84,6 +84,7 @@ import { RunStatusMessages, TestRunCaseStatusMessages } from '@/types/status';
 import { TestTypeMessages } from '@/types/testType';
 import { MemberType } from '@/types/user';
 import { logError } from '@/utils/errorHandler';
+import ResizablePanes from '@/components/ResizablePane';
 import TreeItem from '@/components/TreeItem';
 import { buildFolderTree } from '@/utils/buildFolderTree';
 import { isCaseInRun, pruneFoldersToCases } from '@/utils/runCaseScope';
@@ -625,7 +626,7 @@ export default function RunEditor({
         </div>
       </div>
 
-      <div className="container mx-auto max-w-5xl pt-6 px-6 flex-grow">
+      <div className="container mx-auto max-w-none pt-6 px-6 flex-grow">
         {blockingStage ? (
           <div className="mb-4 flex items-start gap-2 rounded-medium border-medium border-warning-300 bg-warning-50 p-3 dark:bg-warning-100">
             <Lock size={16} className="mt-1 shrink-0" />
@@ -766,74 +767,82 @@ export default function RunEditor({
           </div>
         </div>
 
-        <div className="mt-3 flex rounded-small border-2 dark:border-neutral-700 mb-12">
-          <div className="w-3/12 border-r-1 dark:border-neutral-700">
-            <Tree
-              data={scopedTree}
-              className="w-full"
-              indent={16}
-              rowHeight={42}
-              overscanCount={5}
-              paddingTop={20}
-              paddingBottom={20}
-              padding={20}
-              width="100%"
-              openByDefault={false}
-              disableDrop={true}
-              disableDrag={true}
-            >
-              {({ node, style }: { node: NodeApi<TreeNodeData>; style: React.CSSProperties }) => (
-                <TreeItem
-                  style={style}
-                  isSelected={selectedFolder ? node.data.id === selectedFolder.id : false}
-                  onClick={() => {
-                    setSelectedKeys(new Set([]));
-                    setSelectedFolder(node.data);
-                  }}
-                  toggleButton={
-                    node.data.children && node.data.children.length > 0 ? (
-                      <Button
-                        size="sm"
-                        className="bg-transparent rounded-full h-6 w-6 min-w-4"
-                        isIconOnly
-                        onPress={() => node.toggle()}
-                      >
-                        {node.isOpen ? (
-                          <ChevronDown size={20} color="#F7C24E" />
-                        ) : (
-                          <ChevronRight size={20} color="#F7C24E" />
-                        )}
-                      </Button>
-                    ) : null
-                  }
-                  icon={<Folder size={20} color="#F7C24E" fill="#F7C24E" />}
-                  label={node.data.name}
-                />
-              )}
-            </Tree>
-          </div>
-          <div className="w-9/12 overflow-x-auto">
-            <TestCaseSelector
-              projectId={projectId}
-              runId={runId}
-              locale={locale}
-              cases={filteredTestCases}
-              isDisabled={isLocked || !tokenContext.isProjectReporter(Number(projectId))}
-              blockedCaseIds={gate.blockedCaseIds}
-              isManager={isManager}
-              members={members}
-              selectedKeys={selectedKeys}
-              onSelectionChange={setSelectedKeys}
-              onChangeStatus={handleChangeStatus}
-              onIncludeCase={(includeTestId) => handleIncludeExcludeCase(true, includeTestId)}
-              onExcludeCase={(excludeCaseId) => handleIncludeExcludeCase(false, excludeCaseId)}
-              onAssignCase={handleAssignCase}
-              messages={messages}
-              testRunCaseStatusMessages={testRunCaseStatusMessages}
-              priorityMessages={priorityMessages}
-              testTypeMessages={testTypeMessages}
-            />
-          </div>
+        {/* Les deux volets se partagent la largeur, et la poignée laisse
+            choisir : un titre de cas est long, un nom de dossier aussi. */}
+        <div className="mt-3 rounded-small border-2 dark:border-neutral-700 mb-12">
+          <ResizablePanes
+            heightClassName="h-[32rem]"
+            minLeftWidth={12}
+            minRightWidth={30}
+            defaultLeftWidth={18}
+            leftPane={
+              <Tree
+                data={scopedTree}
+                className="w-full"
+                indent={16}
+                rowHeight={42}
+                overscanCount={5}
+                paddingTop={20}
+                paddingBottom={20}
+                padding={20}
+                width="100%"
+                openByDefault={false}
+                disableDrop={true}
+                disableDrag={true}
+              >
+                {({ node, style }: { node: NodeApi<TreeNodeData>; style: React.CSSProperties }) => (
+                  <TreeItem
+                    style={style}
+                    isSelected={selectedFolder ? node.data.id === selectedFolder.id : false}
+                    onClick={() => {
+                      setSelectedKeys(new Set([]));
+                      setSelectedFolder(node.data);
+                    }}
+                    toggleButton={
+                      node.data.children && node.data.children.length > 0 ? (
+                        <Button
+                          size="sm"
+                          className="bg-transparent rounded-full h-6 w-6 min-w-4"
+                          isIconOnly
+                          onPress={() => node.toggle()}
+                        >
+                          {node.isOpen ? (
+                            <ChevronDown size={20} color="#F7C24E" />
+                          ) : (
+                            <ChevronRight size={20} color="#F7C24E" />
+                          )}
+                        </Button>
+                      ) : null
+                    }
+                    icon={<Folder size={20} color="#F7C24E" fill="#F7C24E" />}
+                    label={node.data.name}
+                  />
+                )}
+              </Tree>
+            }
+            rightPane={
+              <TestCaseSelector
+                projectId={projectId}
+                runId={runId}
+                locale={locale}
+                cases={filteredTestCases}
+                isDisabled={isLocked || !tokenContext.isProjectReporter(Number(projectId))}
+                blockedCaseIds={gate.blockedCaseIds}
+                isManager={isManager}
+                members={members}
+                selectedKeys={selectedKeys}
+                onSelectionChange={setSelectedKeys}
+                onChangeStatus={handleChangeStatus}
+                onIncludeCase={(includeTestId) => handleIncludeExcludeCase(true, includeTestId)}
+                onExcludeCase={(excludeCaseId) => handleIncludeExcludeCase(false, excludeCaseId)}
+                onAssignCase={handleAssignCase}
+                messages={messages}
+                testRunCaseStatusMessages={testRunCaseStatusMessages}
+                priorityMessages={priorityMessages}
+                testTypeMessages={testTypeMessages}
+              />
+            }
+          />
         </div>
 
         <Divider className="my-6" />
