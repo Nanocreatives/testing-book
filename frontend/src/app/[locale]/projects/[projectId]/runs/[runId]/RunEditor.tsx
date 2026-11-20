@@ -18,6 +18,11 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
 } from '@heroui/react';
 import {
   Save,
@@ -38,6 +43,8 @@ import {
   ListFilter,
   FlaskConical,
   Users,
+  ListTodo,
+  RotateCcw,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { NodeApi, Tree } from 'react-arborist';
@@ -45,6 +52,8 @@ import { usePathname } from 'next/navigation';
 import {
   fetchRun,
   fetchRuns,
+  fetchRunCaseVerdicts,
+  resetRunCases,
   updateRun,
   updateRunCases,
   fetchProjectCases,
@@ -75,6 +84,7 @@ import { RunStatusMessages, TestRunCaseStatusMessages } from '@/types/status';
 import { TestTypeMessages } from '@/types/testType';
 import { MemberType } from '@/types/user';
 import { logError } from '@/utils/errorHandler';
+import ResizablePanes from '@/components/ResizablePane';
 import TreeItem from '@/components/TreeItem';
 import { buildFolderTree } from '@/utils/buildFolderTree';
 import { isCaseInRun, pruneFoldersToCases } from '@/utils/runCaseScope';
@@ -120,12 +130,18 @@ export default function RunEditor({
   // montrés que si on vient en composer une, ce que seul un rapporteur peut.
   const [onlyRunCases, setOnlyRunCases] = useState<boolean>(true);
   const [siblingRuns, setSiblingRuns] = useState<RunType[]>([]);
+  const [resetTargets, setResetTargets] = useState<number[] | null>(null);
+  const [resetVerdicts, setResetVerdicts] = useState<{ username: string }[]>([]);
+  const [isResetting, setIsResetting] = useState(false);
   const [runStatusCounts, setRunStatusCounts] = useState<RunStatusCountType[]>([]);
   // Le désaccord n'est PAS un sixième statut : un cas dont les avis divergent
   // est déjà compté sous son statut agrégé. Le mettre en tranche le retirerait
   // des échecs — donc il se lit à côté du camembert, pas dedans.
   const [disagreeing, setDisagreeing] = useState<number>(0);
   const [awaitingVerdicts, setAwaitingVerdicts] = useState<number>(0);
+  // Ce qui reste à CETTE personne. Le total de la campagne ne le dit pas, et
+  // c'est pourtant le seul nombre qui lui dise quoi faire.
+  const [yoursToPlay, setYoursToPlay] = useState<number>(0);
   const [selectedKeys, setSelectedKeys] = useState<Selection>(new Set([]));
   const [selectedFolder, setSelectedFolder] = useState<TreeNodeData | null>(null);
   const [testCases, setTestCases] = useState<CaseType[]>([]);
@@ -207,11 +223,13 @@ export default function RunEditor({
       statusCounts,
       disagreeing: diverging,
       awaitingVerdicts: pending,
+      yoursToPlay: mine,
     } = await fetchRun(tokenContext.token.access_token, Number(runId));
     setTestRun(run);
     setRunStatusCounts(statusCounts);
     setDisagreeing(diverging ?? 0);
     setAwaitingVerdicts(pending ?? 0);
+    setYoursToPlay(mine ?? 0);
     setGate(await fetchRunGate(tokenContext.token.access_token, Number(runId)));
   };
 
@@ -296,6 +314,47 @@ export default function RunEditor({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onlyRunCases]);
+
+  /**
+   * La liste déroulante de statut ne retire QUE l'avis de qui l'utilise. Juste
+   * quand on joue, faux quand un énoncé a changé et qu'il faut tout rejouer :
+   * le gestionnaire efface alors les avis de tout le monde, et la modale les
+   * nomme d'abord.
+   */
+  const openResetDialog = async () => {
+    const ids =
+      selectedKeys === 'all'
+        ? filteredTestCases.map((entry) => entry.RunCases?.[0]?.id).filter((id): id is number => Boolean(id))
+        : Array.from(selectedKeys)
+            .map((key) => testCases.find((entry) => entry.id === Number(key))?.RunCases?.[0]?.id)
+            .filter((id): id is number => Boolean(id));
+    if (ids.length === 0) return;
+    setResetTargets(ids);
+    try {
+      setResetVerdicts(await fetchRunCaseVerdicts(tokenContext.token.access_token, Number(runId), ids));
+    } catch (error: unknown) {
+      logError('Error reading verdicts:', error);
+      setResetVerdicts([]);
+    }
+  };
+
+  const confirmReset = async () => {
+    if (!resetTargets) return;
+    setIsResetting(true);
+    try {
+      await resetRunCases(tokenContext.token.access_token, Number(runId), resetTargets);
+      addToast({ title: messages.resetDone, color: 'success' });
+      setSelectedKeys(new Set([]));
+      setResetTargets(null);
+      await fetchRunAndStatusCount();
+      await initTestCases();
+    } catch (error: unknown) {
+      addToast({ title: 'Error', color: 'danger', description: messages.resetError });
+      logError('Error resetting run cases:', error);
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const handleChangeStatus = async (changeCaseId: number, newStatus: number) => {
     setIsDirty(true);
@@ -567,7 +626,7 @@ export default function RunEditor({
         </div>
       </div>
 
-      <div className="container mx-auto max-w-5xl pt-6 px-6 flex-grow">
+      <div className="container mx-auto max-w-none pt-6 px-6 flex-grow">
         {blockingStage ? (
           <div className="mb-4 flex items-start gap-2 rounded-medium border-medium border-warning-300 bg-warning-50 p-3 dark:bg-warning-100">
             <Lock size={16} className="mt-1 shrink-0" />
@@ -601,6 +660,192 @@ export default function RunEditor({
           )
         )}
 
+        {/* Ce qui reste à faire passe AVANT l'avancement : un testeur qui arrive
+            cherche quoi jouer, pas où en est la campagne. */}
+        {yoursToPlay > 0 && (
+          <div className="mb-4 flex items-start gap-2 rounded-medium border-medium border-primary-300 bg-primary-50 p-3 dark:bg-primary-100">
+            <ListTodo size={16} className="mt-1 shrink-0 text-primary-600" />
+            <div className="min-w-0">
+              <p className="font-bold">{messages.yoursToPlay.replace('{n}', String(yoursToPlay))}</p>
+              <p className="text-small text-default-600">{messages.yoursToPlayHint}</p>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <h6 className="h-8 font-bold">{onlyRunCases ? messages.casesInRun : messages.selectTestCase}</h6>
+            <span className="text-small text-default-500">{scopedCases.length}</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Composer une campagne demande de voir les cas qui n'y sont pas
+                encore ; les jouer demande de ne voir qu'elle. */}
+            {tokenContext.isProjectReporter(Number(projectId)) && (
+              <Button
+                size="sm"
+                variant="bordered"
+                startContent={onlyRunCases ? <ListFilter size={16} /> : <FlaskConical size={16} />}
+                onPress={() => {
+                  setSelectedKeys(new Set([]));
+                  setOnlyRunCases((only) => !only);
+                }}
+              >
+                {onlyRunCases ? messages.showAllProjectCases : messages.showOnlyRunCases}
+              </Button>
+            )}
+            {(selectedKeys === 'all' || selectedKeys.size > 0) && (
+              <>
+                {isManager && (
+                  <AssigneePicker
+                    isAvatarOnly={false}
+                    assigneeUserId={null}
+                    members={members}
+                    isDisabled={false}
+                    unassignedLabel={messages.unassigned}
+                    searchPlaceholder={messages.searchAssignee}
+                    triggerLabel={messages.assignSelected}
+                    onAssign={(userId) => handleBulkAssignCases(userId)}
+                  />
+                )}
+                {isManager && (
+                  <Button
+                    size="sm"
+                    variant="bordered"
+                    color="warning"
+                    startContent={<RotateCcw size={16} />}
+                    onPress={openResetDialog}
+                  >
+                    {messages.resetToDo}
+                  </Button>
+                )}
+                {tokenContext.isProjectDeveloper(Number(projectId)) && (
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button size="sm" variant="bordered" startContent={<UserCog size={16} />}>
+                        {messages.ownerRole}
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu aria-label="owner role actions">
+                      {ownerRoleOptions.map((option) => (
+                        <DropdownItem key={option.key} onPress={() => handleBulkOwnerRole(option.value)}>
+                          {option.label}
+                        </DropdownItem>
+                      ))}
+                    </DropdownMenu>
+                  </Dropdown>
+                )}
+                <Dropdown>
+                  <DropdownTrigger>
+                    <Button
+                      size="sm"
+                      isDisabled={isLocked || !tokenContext.isProjectReporter(Number(projectId))}
+                      color="primary"
+                      endContent={<ChevronDown size={16} />}
+                    >
+                      {messages.testCaseSelection}
+                    </Button>
+                  </DropdownTrigger>
+                  <DropdownMenu aria-label="test case select actions">
+                    <DropdownItem
+                      key="include"
+                      startContent={<CopyPlus size={16} />}
+                      onPress={() => handleBulkIncludeExcludeCases(true)}
+                    >
+                      {messages.includeInRun}
+                    </DropdownItem>
+                    <DropdownItem
+                      key="exclude"
+                      startContent={<CopyMinus size={16} />}
+                      onPress={() => handleBulkIncludeExcludeCases(false)}
+                    >
+                      {messages.excludeFromRun}
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Les deux volets se partagent la largeur, et la poignée laisse
+            choisir : un titre de cas est long, un nom de dossier aussi. */}
+        <div className="mt-3 rounded-small border-2 dark:border-neutral-700 mb-12">
+          <ResizablePanes
+            heightClassName="h-[32rem]"
+            minLeftWidth={12}
+            minRightWidth={30}
+            defaultLeftWidth={18}
+            leftPane={
+              <Tree
+                data={scopedTree}
+                className="w-full"
+                indent={16}
+                rowHeight={42}
+                overscanCount={5}
+                paddingTop={20}
+                paddingBottom={20}
+                padding={20}
+                width="100%"
+                openByDefault={false}
+                disableDrop={true}
+                disableDrag={true}
+              >
+                {({ node, style }: { node: NodeApi<TreeNodeData>; style: React.CSSProperties }) => (
+                  <TreeItem
+                    style={style}
+                    isSelected={selectedFolder ? node.data.id === selectedFolder.id : false}
+                    onClick={() => {
+                      setSelectedKeys(new Set([]));
+                      setSelectedFolder(node.data);
+                    }}
+                    toggleButton={
+                      node.data.children && node.data.children.length > 0 ? (
+                        <Button
+                          size="sm"
+                          className="bg-transparent rounded-full h-6 w-6 min-w-4"
+                          isIconOnly
+                          onPress={() => node.toggle()}
+                        >
+                          {node.isOpen ? (
+                            <ChevronDown size={20} color="#F7C24E" />
+                          ) : (
+                            <ChevronRight size={20} color="#F7C24E" />
+                          )}
+                        </Button>
+                      ) : null
+                    }
+                    icon={<Folder size={20} color="#F7C24E" fill="#F7C24E" />}
+                    label={node.data.name}
+                  />
+                )}
+              </Tree>
+            }
+            rightPane={
+              <TestCaseSelector
+                projectId={projectId}
+                runId={runId}
+                locale={locale}
+                cases={filteredTestCases}
+                isDisabled={isLocked || !tokenContext.isProjectReporter(Number(projectId))}
+                blockedCaseIds={gate.blockedCaseIds}
+                isManager={isManager}
+                members={members}
+                selectedKeys={selectedKeys}
+                onSelectionChange={setSelectedKeys}
+                onChangeStatus={handleChangeStatus}
+                onIncludeCase={(includeTestId) => handleIncludeExcludeCase(true, includeTestId)}
+                onExcludeCase={(excludeCaseId) => handleIncludeExcludeCase(false, excludeCaseId)}
+                onAssignCase={handleAssignCase}
+                messages={messages}
+                testRunCaseStatusMessages={testRunCaseStatusMessages}
+                priorityMessages={priorityMessages}
+                testTypeMessages={testTypeMessages}
+              />
+            }
+          />
+        </div>
+
+        <Divider className="my-6" />
         <div className="flex">
           <div>
             <div className="w-96 h-72">
@@ -722,162 +967,40 @@ export default function RunEditor({
             </div>
           </div>
         </div>
+      </div>
 
-        <Divider className="my-6" />
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <h6 className="h-8 font-bold">{onlyRunCases ? messages.casesInRun : messages.selectTestCase}</h6>
-            <span className="text-small text-default-500">{scopedCases.length}</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Composer une campagne demande de voir les cas qui n'y sont pas
-                encore ; les jouer demande de ne voir qu'elle. */}
-            {tokenContext.isProjectReporter(Number(projectId)) && (
-              <Button
-                size="sm"
-                variant="bordered"
-                startContent={onlyRunCases ? <ListFilter size={16} /> : <FlaskConical size={16} />}
-                onPress={() => {
-                  setSelectedKeys(new Set([]));
-                  setOnlyRunCases((only) => !only);
-                }}
-              >
-                {onlyRunCases ? messages.showAllProjectCases : messages.showOnlyRunCases}
-              </Button>
-            )}
-            {(selectedKeys === 'all' || selectedKeys.size > 0) && (
+      {/* Nommer les personnes AVANT d'effacer : supprimer le travail de
+          quelqu'un ne doit jamais arriver par surprise. */}
+      <Modal isOpen={resetTargets !== null} onOpenChange={() => setResetTargets(null)} size="lg">
+        <ModalContent>
+          <ModalHeader>{messages.resetTitle}</ModalHeader>
+          <ModalBody>
+            <p className="text-small text-default-600">{messages.resetWarning}</p>
+            {resetVerdicts.length === 0 ? (
+              <p className="text-small">{messages.resetNobody}</p>
+            ) : (
               <>
-                {isManager && (
-                  <AssigneePicker
-                    isAvatarOnly={false}
-                    assigneeUserId={null}
-                    members={members}
-                    isDisabled={false}
-                    unassignedLabel={messages.unassigned}
-                    searchPlaceholder={messages.searchAssignee}
-                    triggerLabel={messages.assignSelected}
-                    onAssign={(userId) => handleBulkAssignCases(userId)}
-                  />
-                )}
-                {tokenContext.isProjectDeveloper(Number(projectId)) && (
-                  <Dropdown>
-                    <DropdownTrigger>
-                      <Button size="sm" variant="bordered" startContent={<UserCog size={16} />}>
-                        {messages.ownerRole}
-                      </Button>
-                    </DropdownTrigger>
-                    <DropdownMenu aria-label="owner role actions">
-                      {ownerRoleOptions.map((option) => (
-                        <DropdownItem key={option.key} onPress={() => handleBulkOwnerRole(option.value)}>
-                          {option.label}
-                        </DropdownItem>
-                      ))}
-                    </DropdownMenu>
-                  </Dropdown>
-                )}
-                <Dropdown>
-                  <DropdownTrigger>
-                    <Button
-                      size="sm"
-                      isDisabled={isLocked || !tokenContext.isProjectReporter(Number(projectId))}
-                      color="primary"
-                      endContent={<ChevronDown size={16} />}
-                    >
-                      {messages.testCaseSelection}
-                    </Button>
-                  </DropdownTrigger>
-                  <DropdownMenu aria-label="test case select actions">
-                    <DropdownItem
-                      key="include"
-                      startContent={<CopyPlus size={16} />}
-                      onPress={() => handleBulkIncludeExcludeCases(true)}
-                    >
-                      {messages.includeInRun}
-                    </DropdownItem>
-                    <DropdownItem
-                      key="exclude"
-                      startContent={<CopyMinus size={16} />}
-                      onPress={() => handleBulkIncludeExcludeCases(false)}
-                    >
-                      {messages.excludeFromRun}
-                    </DropdownItem>
-                  </DropdownMenu>
-                </Dropdown>
+                <p className="mt-2 font-bold">
+                  {messages.resetWhose} · {resetVerdicts.length}
+                </p>
+                <ul className="text-small">
+                  {Array.from(new Set(resetVerdicts.map((verdict) => verdict.username || '—'))).map((nom) => (
+                    <li key={nom}>{nom}</li>
+                  ))}
+                </ul>
               </>
             )}
-          </div>
-        </div>
-
-        <div className="mt-3 flex rounded-small border-2 dark:border-neutral-700 mb-12">
-          <div className="w-3/12 border-r-1 dark:border-neutral-700">
-            <Tree
-              data={scopedTree}
-              className="w-full"
-              indent={16}
-              rowHeight={42}
-              overscanCount={5}
-              paddingTop={20}
-              paddingBottom={20}
-              padding={20}
-              width="100%"
-              openByDefault={false}
-              disableDrop={true}
-              disableDrag={true}
-            >
-              {({ node, style }: { node: NodeApi<TreeNodeData>; style: React.CSSProperties }) => (
-                <TreeItem
-                  style={style}
-                  isSelected={selectedFolder ? node.data.id === selectedFolder.id : false}
-                  onClick={() => {
-                    setSelectedKeys(new Set([]));
-                    setSelectedFolder(node.data);
-                  }}
-                  toggleButton={
-                    node.data.children && node.data.children.length > 0 ? (
-                      <Button
-                        size="sm"
-                        className="bg-transparent rounded-full h-6 w-6 min-w-4"
-                        isIconOnly
-                        onPress={() => node.toggle()}
-                      >
-                        {node.isOpen ? (
-                          <ChevronDown size={20} color="#F7C24E" />
-                        ) : (
-                          <ChevronRight size={20} color="#F7C24E" />
-                        )}
-                      </Button>
-                    ) : null
-                  }
-                  icon={<Folder size={20} color="#F7C24E" fill="#F7C24E" />}
-                  label={node.data.name}
-                />
-              )}
-            </Tree>
-          </div>
-          <div className="w-9/12 overflow-x-auto">
-            <TestCaseSelector
-              projectId={projectId}
-              runId={runId}
-              locale={locale}
-              cases={filteredTestCases}
-              isDisabled={isLocked || !tokenContext.isProjectReporter(Number(projectId))}
-              blockedCaseIds={gate.blockedCaseIds}
-              isManager={isManager}
-              members={members}
-              selectedKeys={selectedKeys}
-              onSelectionChange={setSelectedKeys}
-              onChangeStatus={handleChangeStatus}
-              onIncludeCase={(includeTestId) => handleIncludeExcludeCase(true, includeTestId)}
-              onExcludeCase={(excludeCaseId) => handleIncludeExcludeCase(false, excludeCaseId)}
-              onAssignCase={handleAssignCase}
-              messages={messages}
-              testRunCaseStatusMessages={testRunCaseStatusMessages}
-              priorityMessages={priorityMessages}
-              testTypeMessages={testTypeMessages}
-            />
-          </div>
-        </div>
-      </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button size="sm" variant="light" onPress={() => setResetTargets(null)}>
+              {messages.close}
+            </Button>
+            <Button size="sm" color="danger" isLoading={isResetting} onPress={confirmReset}>
+              {messages.resetConfirm}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </>
   );
 }

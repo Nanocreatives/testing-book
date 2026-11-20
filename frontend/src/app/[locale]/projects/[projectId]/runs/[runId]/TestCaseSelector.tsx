@@ -16,7 +16,7 @@ import {
   SortDescriptor,
   Chip,
 } from '@heroui/react';
-import { MoreVertical, CopyPlus, CopyMinus, MessageCircle, Lock, EyeOff } from 'lucide-react';
+import { MoreVertical, CopyPlus, CopyMinus, MessageCircle, Lock } from 'lucide-react';
 import RunCaseStatus from './RunCaseStatus';
 import AssigneePicker from './AssigneePicker';
 import { Link, NextUiLinkClasses } from '@/src/i18n/routing';
@@ -73,10 +73,8 @@ export default function TestCaseSelector({
   priorityMessages,
 }: Props) {
   const headerColumns = [
-    { name: messages.id, uid: 'id', sortable: true },
     { name: messages.title, uid: 'title', sortable: true },
     { name: messages.priority, uid: 'priority', sortable: true },
-    { name: messages.tags, uid: 'tags', sortable: false },
     { name: messages.status, uid: 'runStatus', sortable: true },
     { name: messages.assignee, uid: 'assignee', sortable: true },
     { name: messages.comments, uid: 'comments', sortable: false },
@@ -163,7 +161,6 @@ export default function TestCaseSelector({
   const renderCell = (testCase: CaseType, columnKey: string): ReactNode => {
     const cellValue = testCase[columnKey as keyof CaseType];
     const isIncluded = isCaseIncluded(testCase);
-    const isBlind = Boolean(testCase.RunCases?.[0]?.blind);
     // Held back by work that belongs to someone else, and placed before this one.
     const isBlocked = blockedCaseIds.includes(testCase.id);
     const runStatus = testCase.RunCases && testCase.RunCases.length > 0 ? testCase.RunCases[0].status : 0;
@@ -172,11 +169,11 @@ export default function TestCaseSelector({
     switch (columnKey) {
       case 'title':
         return (
-          <div className={isIncluded ? '' : notIncludedCaseClass}>
+          <div className={`min-w-[10rem] ${isIncluded ? '' : notIncludedCaseClass}`}>
             <Link
               href={`/projects/${projectId}/runs/${runId}/cases/${testCase.id}`}
               locale={locale}
-              className={`${NextUiLinkClasses} block max-w-24 truncate`}
+              className={`${NextUiLinkClasses} line-clamp-2`}
               onPointerDown={(e) => e.stopPropagation()}
             >
               {cellValue as string}
@@ -197,20 +194,6 @@ export default function TestCaseSelector({
             <TestCasePriority priorityValue={cellValue as number} priorityMessages={priorityMessages} />
           </div>
         );
-      case 'tags':
-        return (
-          <div className={`flex gap-1 flex-wrap ${isIncluded ? '' : notIncludedCaseClass}`}>
-            {testCase.Tags && testCase.Tags.length > 0 ? (
-              testCase.Tags.map((tag) => (
-                <Chip key={tag.id} size="sm" variant="flat">
-                  {tag.name}
-                </Chip>
-              ))
-            ) : (
-              <span>-</span>
-            )}
-          </div>
-        );
       case 'runStatus':
         return (
           <Dropdown>
@@ -223,25 +206,13 @@ export default function TestCaseSelector({
                 title={
                   isBlocked
                     ? messages.caseBlocked
-                    : isBlind
-                      ? messages.blindVerdict
-                      : isIncluded
-                        ? testRunCaseStatusMessages[testRunCaseStatus[runStatus].uid]
-                        : undefined
+                    : isIncluded
+                      ? testRunCaseStatusMessages[testRunCaseStatus[runStatus].uid]
+                      : undefined
                 }
                 isDisabled={!isIncluded || isBlocked}
               >
-                {/* Un cas déjà jugé par un autre ne se montre pas « non testé » :
-                    ce serait faire croire que personne n'a regardé. */}
-                {isIncluded ? (
-                  isBlind ? (
-                    <EyeOff size={16} className="text-default-500" />
-                  ) : (
-                    <RunCaseStatus uid={testRunCaseStatus[runStatus].uid} />
-                  )
-                ) : (
-                  '-'
-                )}
+                {isIncluded ? <RunCaseStatus uid={testRunCaseStatus[runStatus].uid} /> : '-'}
               </Button>
             </DropdownTrigger>
             <DropdownMenu disabledKeys={disabledStatusKeys} aria-label="test case actions">
@@ -340,9 +311,10 @@ export default function TestCaseSelector({
 
   const classNames = useMemo(
     () => ({
-      wrapper: ['min-w-3xl'],
-      th: ['bg-transparent', 'text-default-500', 'border-b', 'border-divider'],
+      wrapper: ['min-w-0'],
+      th: ['bg-transparent', 'text-default-500', 'border-b', 'border-divider', 'px-2'],
       td: [
+        'px-2',
         // changing the rows border radius
         // first
         'group-data-[first=true]:first:before:rounded-none',

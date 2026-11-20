@@ -176,9 +176,11 @@ app.use('/stages', stagesCompleteRoute(sequelize));
 import runCaseIndexRoute from './routes/runcases/index.js';
 import runCaseEditRoute from './routes/runcases/edit.js';
 import runCaseAssigneeRoute from './routes/runcases/assignee.js';
+import runCaseResetRoute from './routes/runcases/reset.js';
 app.use('/runcases', runCaseIndexRoute(sequelize));
 app.use('/runcases', runCaseEditRoute(sequelize));
 app.use('/runcases', runCaseAssigneeRoute(sequelize));
+app.use('/runcases', runCaseResetRoute(sequelize));
 
 // "/runcaseattachments"
 import runCaseAttachmentsIndexRoute from './routes/runcaseattachments/index.js';

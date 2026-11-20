@@ -70,6 +70,9 @@ export type TrackingMessages = {
   notComparableHint: string;
   remaining: string;
   noData: string;
+  behindTitle: string;
+  behindDetail: string;
+  behindNone: string;
   filterByStatus: string;
   filterHint: string;
   clearFilter: string;

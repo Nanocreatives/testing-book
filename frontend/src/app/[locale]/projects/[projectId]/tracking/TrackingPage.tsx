@@ -18,7 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@heroui/react';
-import { CircleHelp, Filter } from 'lucide-react';
+import { CircleHelp, Filter, BellRing } from 'lucide-react';
 import { fetchTrackingReport } from './trackingControl';
 import { memberRoles, testRunCaseStatus } from '@/config/selection';
 import { TokenContext } from '@/utils/TokenProvider';
@@ -176,6 +176,29 @@ export default function TrackingPage({ projectId, messages, statusMessages }: Pr
           </PopoverContent>
         </Popover>
       </div>
+
+      {/* L'alerte du gestionnaire : qui peut jouer des cas que personne n'a
+          encore touchés. Nommer les personnes évite de parcourir le tableau
+          pour trouver qui relancer. */}
+      {report.byMember.some((member) => member.awaiting > 0) && (
+        <div className="mt-4 flex items-start gap-2 rounded-medium border-medium border-warning-300 bg-warning-50 p-3 dark:bg-warning-100">
+          <BellRing size={16} className="mt-1 shrink-0 text-warning-600" />
+          <div className="min-w-0">
+            <p className="font-bold">{messages.behindTitle}</p>
+            <p className="text-small text-default-600">{messages.behindDetail}</p>
+            <ul className="mt-1 text-small">
+              {report.byMember
+                .filter((member) => member.awaiting > 0)
+                .sort((a, b) => b.awaiting - a.awaiting)
+                .map((member) => (
+                  <li key={member.userId} className="truncate">
+                    <span className="font-bold">{member.username}</span> · {member.awaiting}
+                  </li>
+                ))}
+            </ul>
+          </div>
+        </div>
+      )}
 
       <Tabs aria-label={messages.title} className="mt-4">
         <Tab key="overall" title={messages.overall}>
