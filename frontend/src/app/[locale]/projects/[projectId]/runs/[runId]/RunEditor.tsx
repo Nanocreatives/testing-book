@@ -671,129 +671,6 @@ export default function RunEditor({
           </div>
         )}
 
-        <div className="flex">
-          <div>
-            <div className="w-96 h-72">
-              <div className="flex items-center">
-                <h4 className="font-bold">{messages.progress}</h4>
-                <Tooltip content={messages.refresh}>
-                  <Button
-                    isIconOnly
-                    size="sm"
-                    className="rounded-full bg-transparent ms-1"
-                    onPress={fetchRunAndStatusCount}
-                  >
-                    <RotateCw size={16} />
-                  </Button>
-                </Tooltip>
-              </div>
-
-              <RunProgressChart
-                statusCounts={runStatusCounts}
-                testRunCaseStatusMessages={testRunCaseStatusMessages}
-                theme={theme}
-              />
-            </div>
-
-            {/* Deux états d'exception : tant qu'ils valent zéro, les afficher
-                n'apprendrait rien. Un seul testeur ne peut pas être en
-                désaccord avec lui-même. */}
-            {(disagreeing > 0 || awaitingVerdicts > 0) && (
-              <div className="w-96 rounded-medium border-medium border-default-200 p-3">
-                {disagreeing > 0 && (
-                  <div className="flex items-start gap-2">
-                    <Users size={16} className="mt-1 shrink-0 text-warning-600" />
-                    <div className="min-w-0">
-                      <p className="font-bold">
-                        {messages.disagreeing} · {disagreeing}
-                      </p>
-                      <p className="text-tiny text-default-600">{messages.disagreeingDetail}</p>
-                    </div>
-                  </div>
-                )}
-                {awaitingVerdicts > 0 && (
-                  <p className={`text-small text-default-600 ${disagreeing > 0 ? 'mt-2' : ''}`}>
-                    {messages.awaitingVerdicts} · {awaitingVerdicts}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-          <div className="flex-grow">
-            <Input
-              size="sm"
-              type="text"
-              variant="bordered"
-              label={messages.title}
-              value={testRun.name}
-              isInvalid={isNameInvalid}
-              errorMessage={isNameInvalid ? messages.pleaseEnter : ''}
-              onChange={(e) => {
-                setTestRun({ ...testRun, name: e.target.value });
-              }}
-              className="mt-3"
-            />
-
-            <Textarea
-              size="sm"
-              variant="bordered"
-              label={messages.description}
-              value={testRun.description}
-              onValueChange={(changeValue) => {
-                setTestRun({ ...testRun, description: changeValue });
-              }}
-              className="mt-3"
-            />
-
-            {/* How the run must be executed. Managers write it; everyone else
-                reads it — a reporter needs the conventions before setting a
-                single status, and the edit form is not where they look. */}
-            {isManager ? (
-              <Textarea
-                size="sm"
-                variant="bordered"
-                label={messages.instructions}
-                placeholder={messages.instructionsPlaceholder}
-                value={testRun.instructions ?? ''}
-                minRows={3}
-                onValueChange={(changeValue) => {
-                  setTestRun({ ...testRun, instructions: changeValue });
-                }}
-                className="mt-3"
-              />
-            ) : (
-              testRun.instructions && (
-                <div className="mt-3 rounded-medium border-medium border-default-200 p-3">
-                  <p className="text-tiny text-default-600">{messages.instructions}</p>
-                  <p className="mt-1 text-small whitespace-pre-wrap">{testRun.instructions}</p>
-                </div>
-              )
-            )}
-
-            <div>
-              <Select
-                size="sm"
-                variant="bordered"
-                selectedKeys={[testRunStatus[testRun.state].uid]}
-                onSelectionChange={(newSelection) => {
-                  if (newSelection !== 'all' && newSelection.size !== 0) {
-                    const selectedUid = Array.from(newSelection)[0];
-                    const index = testRunStatus.findIndex((template) => template.uid === selectedUid);
-                    setTestRun({ ...testRun, state: index });
-                  }
-                }}
-                label={messages.status}
-                className="mt-3 max-w-xs"
-              >
-                {testRunStatus.map((status) => (
-                  <SelectItem key={status.uid}>{runStatusMessages[status.uid]}</SelectItem>
-                ))}
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        <Divider className="my-6" />
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <h6 className="h-8 font-bold">{onlyRunCases ? messages.casesInRun : messages.selectTestCase}</h6>
@@ -956,6 +833,129 @@ export default function RunEditor({
               priorityMessages={priorityMessages}
               testTypeMessages={testTypeMessages}
             />
+          </div>
+        </div>
+
+        <Divider className="my-6" />
+        <div className="flex">
+          <div>
+            <div className="w-96 h-72">
+              <div className="flex items-center">
+                <h4 className="font-bold">{messages.progress}</h4>
+                <Tooltip content={messages.refresh}>
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    className="rounded-full bg-transparent ms-1"
+                    onPress={fetchRunAndStatusCount}
+                  >
+                    <RotateCw size={16} />
+                  </Button>
+                </Tooltip>
+              </div>
+
+              <RunProgressChart
+                statusCounts={runStatusCounts}
+                testRunCaseStatusMessages={testRunCaseStatusMessages}
+                theme={theme}
+              />
+            </div>
+
+            {/* Deux états d'exception : tant qu'ils valent zéro, les afficher
+                n'apprendrait rien. Un seul testeur ne peut pas être en
+                désaccord avec lui-même. */}
+            {(disagreeing > 0 || awaitingVerdicts > 0) && (
+              <div className="w-96 rounded-medium border-medium border-default-200 p-3">
+                {disagreeing > 0 && (
+                  <div className="flex items-start gap-2">
+                    <Users size={16} className="mt-1 shrink-0 text-warning-600" />
+                    <div className="min-w-0">
+                      <p className="font-bold">
+                        {messages.disagreeing} · {disagreeing}
+                      </p>
+                      <p className="text-tiny text-default-600">{messages.disagreeingDetail}</p>
+                    </div>
+                  </div>
+                )}
+                {awaitingVerdicts > 0 && (
+                  <p className={`text-small text-default-600 ${disagreeing > 0 ? 'mt-2' : ''}`}>
+                    {messages.awaitingVerdicts} · {awaitingVerdicts}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="flex-grow">
+            <Input
+              size="sm"
+              type="text"
+              variant="bordered"
+              label={messages.title}
+              value={testRun.name}
+              isInvalid={isNameInvalid}
+              errorMessage={isNameInvalid ? messages.pleaseEnter : ''}
+              onChange={(e) => {
+                setTestRun({ ...testRun, name: e.target.value });
+              }}
+              className="mt-3"
+            />
+
+            <Textarea
+              size="sm"
+              variant="bordered"
+              label={messages.description}
+              value={testRun.description}
+              onValueChange={(changeValue) => {
+                setTestRun({ ...testRun, description: changeValue });
+              }}
+              className="mt-3"
+            />
+
+            {/* How the run must be executed. Managers write it; everyone else
+                reads it — a reporter needs the conventions before setting a
+                single status, and the edit form is not where they look. */}
+            {isManager ? (
+              <Textarea
+                size="sm"
+                variant="bordered"
+                label={messages.instructions}
+                placeholder={messages.instructionsPlaceholder}
+                value={testRun.instructions ?? ''}
+                minRows={3}
+                onValueChange={(changeValue) => {
+                  setTestRun({ ...testRun, instructions: changeValue });
+                }}
+                className="mt-3"
+              />
+            ) : (
+              testRun.instructions && (
+                <div className="mt-3 rounded-medium border-medium border-default-200 p-3">
+                  <p className="text-tiny text-default-600">{messages.instructions}</p>
+                  <p className="mt-1 text-small whitespace-pre-wrap">{testRun.instructions}</p>
+                </div>
+              )
+            )}
+
+            <div>
+              <Select
+                size="sm"
+                variant="bordered"
+                selectedKeys={[testRunStatus[testRun.state].uid]}
+                onSelectionChange={(newSelection) => {
+                  if (newSelection !== 'all' && newSelection.size !== 0) {
+                    const selectedUid = Array.from(newSelection)[0];
+                    const index = testRunStatus.findIndex((template) => template.uid === selectedUid);
+                    setTestRun({ ...testRun, state: index });
+                  }
+                }}
+                label={messages.status}
+                className="mt-3 max-w-xs"
+              >
+                {testRunStatus.map((status) => (
+                  <SelectItem key={status.uid}>{runStatusMessages[status.uid]}</SelectItem>
+                ))}
+              </Select>
+            </div>
           </div>
         </div>
       </div>
