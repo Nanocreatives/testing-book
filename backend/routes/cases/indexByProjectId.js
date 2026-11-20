@@ -6,10 +6,14 @@ import defineFolder from '../../models/folders.js';
 import defineCase from '../../models/cases.js';
 import defineTag from '../../models/tags.js';
 import defineRunCase from '../../models/runCases.js';
+import defineRunCaseVerdict from '../../models/runCaseVerdicts.js';
+import defineComment from '../../models/comments.js';
+import defineUser from '../../models/users.js';
 import authMiddleware from '../../middleware/auth.js';
 import visibilityMiddleware from '../../middleware/verifyVisible.js';
 import editableMiddleware from '../../middleware/verifyEditable.js';
 import { roleIndex } from '../runs/caseGate.js';
+import { groupAuthorsByRunCase, attachAuthors } from './caseAuthors.js';
 
 export default function (sequelize) {
   const Project = defineProject(sequelize, DataTypes);
@@ -17,6 +21,9 @@ export default function (sequelize) {
   const Case = defineCase(sequelize, DataTypes);
   const RunCase = defineRunCase(sequelize, DataTypes);
   const Tags = defineTag(sequelize, DataTypes);
+  const RunCaseVerdict = defineRunCaseVerdict(sequelize, DataTypes);
+  const Comment = defineComment(sequelize, DataTypes);
+  const User = defineUser(sequelize, DataTypes);
   Project.hasMany(Folder, { foreignKey: 'projectId' });
   Folder.hasMany(Case, { foreignKey: 'folderId' });
   Folder.belongsTo(Project, { foreignKey: 'projectId' });
@@ -29,6 +36,47 @@ export default function (sequelize) {
   const { verifyProjectVisibleFromProjectId } = visibilityMiddleware(sequelize);
   const { verifyProjectVisibleFromRunId } = visibilityMiddleware(sequelize);
   const { getProjectRole } = editableMiddleware(sequelize);
+
+  /** Les avis et les commentateurs des cas rendus, en trois requêtes à plat. */
+  async function readAuthors(cases) {
+    const runCaseIds = cases
+      .flatMap((testCase) => testCase.RunCases ?? [])
+      .map((runCase) => runCase.id)
+      .filter((id) => Number.isInteger(id) && id > 0);
+
+    if (runCaseIds.length === 0) {
+      return new Map();
+    }
+
+    const [verdicts, comments] = await Promise.all([
+      RunCaseVerdict.findAll({
+        where: { runCaseId: { [Op.in]: runCaseIds } },
+        attributes: ['runCaseId', 'userId', 'status'],
+        order: [
+          ['createdAt', 'ASC'],
+          ['id', 'ASC'],
+        ],
+      }),
+      Comment.findAll({
+        where: { commentableType: 'RunCase', commentableId: { [Op.in]: runCaseIds } },
+        attributes: ['commentableId', 'userId'],
+        order: [['createdAt', 'ASC']],
+      }),
+    ]);
+
+    const userIds = [
+      ...new Set([...verdicts.map((verdict) => verdict.userId), ...comments.map((comment) => comment.userId)]),
+    ].filter(Boolean);
+    const users = userIds.length
+      ? await User.findAll({ where: { id: { [Op.in]: userIds } }, attributes: ['id', 'username'] })
+      : [];
+
+    return groupAuthorsByRunCase(
+      verdicts,
+      comments.map((comment) => ({ runCaseId: comment.commentableId, userId: comment.userId })),
+      new Map(users.map((user) => [user.id, user.username]))
+    );
+  }
 
   router.get(
     '/byproject',
@@ -149,15 +197,20 @@ export default function (sequelize) {
             tagInclude,
           ],
         });
+        // Un statut sans son auteur n'est qu'une rumeur : la liste nomme qui a
+        // jugé et qui a commenté, pour que la personne suivante sache sur quoi
+        // elle s'appuie avant de rejouer un cas.
+        const withAuthors = attachAuthors(cases, await readAuthors(cases));
+
         // A reporter is shown their own share only: the rest is someone else's
         // work, and a list they cannot act on is noise they have to re-read.
         const role = await getProjectRole(projectId, req.userId);
         if (role !== 'reporter') {
-          return res.json(cases);
+          return res.json(withAuthors);
         }
 
         const reporterRole = roleIndex('reporter');
-        res.json(cases.filter((testCase) => testCase.ownerRole === null || testCase.ownerRole === reporterRole));
+        res.json(withAuthors.filter((testCase) => testCase.ownerRole === null || testCase.ownerRole === reporterRole));
       } catch (error) {
         console.error(error);
         res.status(500).send('Internal Server Error');

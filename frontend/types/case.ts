@@ -39,6 +39,17 @@ type StepType = {
   editState: 'notChanged' | 'changed' | 'new' | 'deleted';
 };
 
+type RunCaseVerdictType = {
+  userId: number | null;
+  username: string;
+  status: number;
+};
+
+type RunCaseCommenterType = {
+  userId: number | null;
+  username: string;
+};
+
 type RunCaseType = {
   id: number;
   runId: number;
@@ -47,6 +58,9 @@ type RunCaseType = {
   editState: 'notChanged' | 'changed' | 'new' | 'deleted';
   commentCount?: number;
   assigneeUserId: number | null;
+  /** Les avis individuels dont `status` est l'agrégat, dans l'ordre où ils ont été posés. */
+  Verdicts?: RunCaseVerdictType[];
+  Commenters?: RunCaseCommenterType[];
 };
 
 type CaseAttachmentType = {
@@ -164,4 +178,13 @@ type CaseMessages = {
   noTagsSelected: string;
 };
 
-export type { CaseType, StepType, AttachmentType, RunCaseAttachmentType, CasesMessages, CaseMessages };
+export type {
+  CaseType,
+  StepType,
+  AttachmentType,
+  RunCaseAttachmentType,
+  RunCaseVerdictType,
+  RunCaseCommenterType,
+  CasesMessages,
+  CaseMessages,
+};

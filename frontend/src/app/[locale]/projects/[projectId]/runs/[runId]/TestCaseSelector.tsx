@@ -15,9 +15,11 @@ import {
   Selection,
   SortDescriptor,
   Chip,
+  Tooltip,
 } from '@heroui/react';
 import { MoreVertical, CopyPlus, CopyMinus, MessageCircle, Lock } from 'lucide-react';
 import RunCaseStatus from './RunCaseStatus';
+import VerdictJudges from './VerdictJudges';
 import AssigneePicker from './AssigneePicker';
 import { Link, NextUiLinkClasses } from '@/src/i18n/routing';
 import { testRunCaseStatus, memberRoles } from '@/config/selection';
@@ -37,6 +39,7 @@ type Props = {
   isDisabled: boolean;
   blockedCaseIds: number[];
   isManager: boolean;
+  viewerId: number | null;
   members: MemberType[];
   selectedKeys: Selection;
   onSelectionChange: React.Dispatch<React.SetStateAction<Selection>>;
@@ -61,6 +64,7 @@ export default function TestCaseSelector({
   isDisabled,
   blockedCaseIds,
   isManager,
+  viewerId,
   members,
   selectedKeys,
   onSelectionChange,
@@ -72,11 +76,16 @@ export default function TestCaseSelector({
   testRunCaseStatusMessages,
   priorityMessages,
 }: Props) {
+  // Une colonne vide sur mille lignes n'est pas une colonne, c'est du bruit :
+  // « Assigné à » ne s'affiche que si quelqu'un est assigné, ou pour celui qui
+  // peut assigner.
+  const someoneAssigned = cases.some((testCase) => testCase.RunCases?.some((runCase) => runCase.assigneeUserId));
+
   const headerColumns = [
     { name: messages.title, uid: 'title', sortable: true },
     { name: messages.priority, uid: 'priority', sortable: true },
     { name: messages.status, uid: 'runStatus', sortable: true },
-    { name: messages.assignee, uid: 'assignee', sortable: true },
+    ...(isManager || someoneAssigned ? [{ name: messages.assignee, uid: 'assignee', sortable: true }] : []),
     { name: messages.comments, uid: 'comments', sortable: false },
     { name: messages.actions, uid: 'actions' },
   ];
@@ -163,8 +172,11 @@ export default function TestCaseSelector({
     const isIncluded = isCaseIncluded(testCase);
     // Held back by work that belongs to someone else, and placed before this one.
     const isBlocked = blockedCaseIds.includes(testCase.id);
-    const runStatus = testCase.RunCases && testCase.RunCases.length > 0 ? testCase.RunCases[0].status : 0;
-    const commentCount = testCase.RunCases && testCase.RunCases.length > 0 ? testCase.RunCases[0].commentCount || 0 : 0;
+    const runCase = testCase.RunCases && testCase.RunCases.length > 0 ? testCase.RunCases[0] : null;
+    const runStatus = runCase ? runCase.status : 0;
+    const commentCount = runCase?.commentCount ?? 0;
+    const verdicts = runCase?.Verdicts ?? [];
+    const commenters = runCase?.Commenters ?? [];
 
     switch (columnKey) {
       case 'title':
@@ -196,37 +208,50 @@ export default function TestCaseSelector({
         );
       case 'runStatus':
         return (
-          <Dropdown>
-            <DropdownTrigger>
-              <Button
-                isIconOnly
-                radius="full"
-                size="sm"
-                variant="light"
-                title={
-                  isBlocked
-                    ? messages.caseBlocked
-                    : isIncluded
-                      ? testRunCaseStatusMessages[testRunCaseStatus[runStatus].uid]
-                      : undefined
-                }
-                isDisabled={!isIncluded || isBlocked}
-              >
-                {isIncluded ? <RunCaseStatus uid={testRunCaseStatus[runStatus].uid} /> : '-'}
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu disabledKeys={disabledStatusKeys} aria-label="test case actions">
-              {testRunCaseStatus.map((runCaseStatus, index) => (
-                <DropdownItem
-                  key={runCaseStatus.uid}
-                  startContent={<RunCaseStatus uid={runCaseStatus.uid} />}
-                  onPress={() => onChangeStatus(testCase.id, index)}
+          <div className="flex items-center gap-1">
+            <Dropdown>
+              <DropdownTrigger>
+                <Button
+                  isIconOnly
+                  radius="full"
+                  size="sm"
+                  variant="light"
+                  title={
+                    isBlocked
+                      ? messages.caseBlocked
+                      : isIncluded
+                        ? testRunCaseStatusMessages[testRunCaseStatus[runStatus].uid]
+                        : undefined
+                  }
+                  isDisabled={!isIncluded || isBlocked}
                 >
-                  {testRunCaseStatusMessages[runCaseStatus.uid]}
-                </DropdownItem>
-              ))}
-            </DropdownMenu>
-          </Dropdown>
+                  {isIncluded ? <RunCaseStatus uid={testRunCaseStatus[runStatus].uid} /> : '-'}
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu disabledKeys={disabledStatusKeys} aria-label="test case actions">
+                {testRunCaseStatus.map((runCaseStatus, index) => (
+                  <DropdownItem
+                    key={runCaseStatus.uid}
+                    startContent={<RunCaseStatus uid={runCaseStatus.uid} />}
+                    onPress={() => onChangeStatus(testCase.id, index)}
+                  >
+                    {testRunCaseStatusMessages[runCaseStatus.uid]}
+                  </DropdownItem>
+                ))}
+              </DropdownMenu>
+            </Dropdown>
+            {isIncluded && (
+              <VerdictJudges
+                verdicts={verdicts}
+                viewerId={viewerId}
+                statusMessages={testRunCaseStatusMessages}
+                judgedByLabel={messages.judgedBy}
+                youLabel={messages.judgedByYou}
+                divergeLabel={messages.verdictsDiverge}
+                unknownLabel={messages.unknownUser}
+              />
+            )}
+          </div>
         );
       case 'assignee': {
         const runCaseId = testCase.RunCases && testCase.RunCases.length > 0 ? testCase.RunCases[0].id : null;
@@ -251,15 +276,28 @@ export default function TestCaseSelector({
         return (
           <div className={isIncluded ? '' : notIncludedCaseClass}>
             {isIncluded && commentCount > 0 ? (
-              <Link
-                href={`/projects/${projectId}/runs/${runId}/cases/${testCase.id}?tab=comments`}
-                locale={locale}
-                className="flex items-center gap-1"
-                onPointerDown={(e) => e.stopPropagation()}
+              <Tooltip
+                placement="top-start"
+                isDisabled={commenters.length === 0}
+                content={
+                  <div className="max-w-xs py-1">
+                    <p className="text-tiny font-medium text-default-500">{messages.commentedBy}</p>
+                    <p className="mt-1 text-tiny">
+                      {commenters.map((commenter) => commenter.username || messages.unknownUser).join(', ')}
+                    </p>
+                  </div>
+                }
               >
-                <MessageCircle size={16} />
-                <span>{commentCount}</span>
-              </Link>
+                <Link
+                  href={`/projects/${projectId}/runs/${runId}/cases/${testCase.id}?tab=comments`}
+                  locale={locale}
+                  className="flex items-center gap-1"
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <MessageCircle size={16} />
+                  <span>{commentCount}</span>
+                </Link>
+              </Tooltip>
             ) : (
               <span className="text-default-400">-</span>
             )}
