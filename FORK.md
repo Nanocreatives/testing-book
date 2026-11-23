@@ -54,6 +54,27 @@ préfixe `/api` n'existe qu'en production, où `entrypoint.js` le monte.
 manque, et ne réécrit **jamais** un statut déjà saisi par un testeur. Vérifié
 sur 1020 cas : second passage, 0 créé, 0 modifié, 1020 inchangés.
 
+## Savoir ce qui a déjà été joué
+
+```bash
+TCMS_PASSWORD=… node scripts/campaign-status.mjs --url=https://… --email=…
+```
+
+À lancer **avant** un import qui réécrit des énoncés. Il rend, campagne par
+campagne, le nombre de cas, combien portent un avis, combien divergent, combien
+attendent encore — et qui a jugé, nom par nom.
+
+Un cas déjà jugé dont la question change doit être rejoué, et c'est un arbitrage
+humain : l'import le signale, il ne le tranche pas. Encore faut-il savoir
+lesquels sont concernés avant d'écrire, pas après.
+
+Strictement en lecture : rien d'autre qu'une connexion et des `GET`.
+
+**Avec un compte gestionnaire ou propriétaire**, pas un compte `reporter` : la
+liste des cas lui est filtrée alors que le comptage des avis porte sur toute la
+campagne, et les colonnes se contrediraient. Le script refuse de tourner dans ce
+cas plutôt que de rendre un chiffre faux mais plausible.
+
 ### Pourquoi un classeur Excel et non des créations unitaires
 
 L'API limite à **1000 requêtes par heure et par IP**. Créer 1020 cas un par un
@@ -163,8 +184,13 @@ donc ni rebuild ni migration.**
 
 ### Sur Coolify
 
-1. Nouvelle ressource → **Docker Compose**, source = ce dépôt, branche `main`.
-   Le `docker-compose.yaml` est à la racine, rien à adapter.
+1. Nouvelle ressource → **Docker Compose**, source = ce dépôt, branche
+   **`funnel`**. Le `docker-compose.yaml` est à la racine, rien à adapter.
+
+   **Pas `main`** : c'est le miroir de la production de l'amont, figé à leur
+   dernière livraison. Déployer `main` servirait un instantané sans notre
+   importeur, sans le suivi des testeurs et sans nos correctifs.
+
 2. Variables : **`SECRET_KEY`** et `FRONTEND_ORIGIN=https://<ton-sous-domaine>`.
    Générer la clé avec `openssl rand -base64 48`, et **ne la coller nulle part
    ailleurs** — c'est elle qui signe les jetons de session.
