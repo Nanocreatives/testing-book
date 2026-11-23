@@ -54,6 +54,22 @@ préfixe `/api` n'existe qu'en production, où `entrypoint.js` le monte.
 manque, et ne réécrit **jamais** un statut déjà saisi par un testeur. Vérifié
 sur 1020 cas : second passage, 0 créé, 0 modifié, 1020 inchangés.
 
+## Savoir ce qui a déjà été joué
+
+```bash
+TCMS_PASSWORD=… node scripts/campaign-status.mjs --url=https://… --email=…
+```
+
+À lancer **avant** un import qui réécrit des énoncés. Il rend, campagne par
+campagne, le nombre de cas, combien portent un avis, combien divergent, combien
+attendent encore — et qui a jugé, nom par nom.
+
+Un cas déjà jugé dont la question change doit être rejoué, et c'est un arbitrage
+humain : l'import le signale, il ne le tranche pas. Encore faut-il savoir
+lesquels sont concernés avant d'écrire, pas après.
+
+Strictement en lecture : rien d'autre qu'une connexion et des `GET`.
+
 ### Pourquoi un classeur Excel et non des créations unitaires
 
 L'API limite à **1000 requêtes par heure et par IP**. Créer 1020 cas un par un
