@@ -75,6 +75,41 @@ liste des cas lui est filtrée alors que le comptage des avis porte sur toute la
 campagne, et les colonnes se contrediraient. Le script refuse de tourner dans ce
 cas plutôt que de rendre un chiffre faux mais plausible.
 
+## Nettoyer les cas en trop
+
+```bash
+TCMS_PASSWORD=… node scripts/extra-cases.mjs --url=https://… --email=… --project='…'
+```
+
+Liste ce que l'instance porte en trop, sous **deux** formes : les cas que les
+plans ne définissent plus, et les références que l'instance porte en plusieurs
+exemplaires. Même origine — l'import rapprochait sur le **titre** jusqu'à la
+PR #2, et renommer un titre créait un cas neuf en laissant l'ancien derrière.
+Orphelin si la référence a disparu des plans, **sosie** si elle y est restée.
+
+Les sosies sont les plus discrets : les deux exemplaires sont « définis », donc
+un contrôle qui ne cherche que les orphelins les laisse passer. C'est ce qui est
+arrivé sur la production, où la vague 0 portait 174 cas pour 169 définis.
+
+Sans `--delete`, il ne fait que lister — c'est le mode normal, et le seul à
+lancer sans avoir regardé. Avec `--delete`, il n'efface que ce **que personne n'a
+jugé** : un cas portant un avis est listé, signalé, et laissé en place. Le travail
+de quelqu'un ne se supprime pas par un script.
+
+Dans un groupe de sosies, l'exemplaire **jugé** est celui qu'on garde, et les
+autres partent. Si **plusieurs** portent un avis, le script n'arbitre pas : rien
+n'est supprimé, et le groupe est listé pour qu'un humain décide lequel fait foi.
+
+Il refuse aussi de supprimer au-delà de **vingt** orphelins : un tel nombre dit
+que le pivot ne correspond pas à l'instance — mauvais projet, ou export d'une
+autre époque — et non que l'instance est pleine de déchets. Préciser `--project`
+plutôt que de s'en remettre au défaut, surtout sur une instance qui porte
+plusieurs générations du projet.
+
+Le rapprochement porte sur **`(plan, référence)`**, jamais sur les titres ni sur
+l'arborescence : un plan renommé, ou une structure de dossiers qui a changé entre
+deux générations, ferait sinon passer tous ses cas pour des orphelins.
+
 ### Pourquoi un classeur Excel et non des créations unitaires
 
 L'API limite à **1000 requêtes par heure et par IP**. Créer 1020 cas un par un
