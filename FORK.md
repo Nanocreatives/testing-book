@@ -70,6 +70,11 @@ lesquels sont concernés avant d'écrire, pas après.
 
 Strictement en lecture : rien d'autre qu'une connexion et des `GET`.
 
+**Avec un compte gestionnaire ou propriétaire**, pas un compte `reporter` : la
+liste des cas lui est filtrée alors que le comptage des avis porte sur toute la
+campagne, et les colonnes se contrediraient. Le script refuse de tourner dans ce
+cas plutôt que de rendre un chiffre faux mais plausible.
+
 ### Pourquoi un classeur Excel et non des créations unitaires
 
 L'API limite à **1000 requêtes par heure et par IP**. Créer 1020 cas un par un
