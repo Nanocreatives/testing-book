@@ -92,13 +92,18 @@ un contrôle qui ne cherche que les orphelins les laisse passer. C'est ce qui es
 arrivé sur la production, où la vague 0 portait 174 cas pour 169 définis.
 
 Sans `--delete`, il ne fait que lister — c'est le mode normal, et le seul à
-lancer sans avoir regardé. Avec `--delete`, il n'efface que ce **que personne n'a
-jugé** : un cas portant un avis est listé, signalé, et laissé en place. Le travail
-de quelqu'un ne se supprime pas par un script.
+lancer sans avoir regardé. Avec `--delete`, il n'efface que ce qui ne porte **le
+travail de personne** : un avis, mais aussi un commentaire ou une pièce jointe.
+Une capture d'écran attachée à un constat **est** la preuve du défaut, et elle ne
+se supprime pas parce qu'un script a jugé le cas superflu. Ce qui en porte est
+listé, signalé, et laissé en place.
 
 Dans un groupe de sosies, l'exemplaire **jugé** est celui qu'on garde, et les
 autres partent. Si **plusieurs** portent un avis, le script n'arbitre pas : rien
 n'est supprimé, et le groupe est listé pour qu'un humain décide lequel fait foi.
+
+L'inventaire se fait par **dossier**, pas par campagne : un cas peut n'être
+rattaché à aucune campagne, et c'est précisément le genre de reste qu'on cherche.
 
 Il refuse aussi de supprimer au-delà de **vingt** orphelins : un tel nombre dit
 que le pivot ne correspond pas à l'instance — mauvais projet, ou export d'une

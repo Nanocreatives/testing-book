@@ -140,25 +140,57 @@ for (const c of payload.cases) {
   defined.add(`${c.plan}||${c.ref}`);
 }
 
-// Tous les cas rattachés à une campagne, avec leur statut et leurs avis.
-const runs = rows(await api('GET', '/runs', { query: { projectId: project.id } }));
+// L'inventaire se fait par DOSSIER, pas par campagne.
+//
+// Un cas peut n'être rattaché à aucune campagne — et c'est précisément le genre
+// de reste qu'on cherche. Énumérer par campagne ne l'aurait jamais vu, et sur un
+// projet sans campagne du tout le script aurait annoncé « rien en trop » sur un
+// inventaire vide.
 const seen = new Map();
+for (const folder of folders) {
+  const cases = rows(await api('GET', '/cases', { query: { folderId: folder.id } }));
+  for (const testCase of cases) {
+    seen.set(testCase.id, { testCase, played: false, verdicts: 0, comments: 0, attachments: 0, runNames: [] });
+  }
+}
+
+// Puis ce que les campagnes en disent : statut, avis, commentaires.
+const runs = rows(await api('GET', '/runs', { query: { projectId: project.id } }));
 for (const run of runs) {
   const cases = rows(await api('GET', '/cases/byproject', { query: { projectId: project.id, runId: run.id } }));
   for (const testCase of cases) {
-    const entry = seen.get(testCase.id) ?? { testCase, played: false, verdicts: 0, runNames: [] };
+    const entry = seen.get(testCase.id);
+    if (!entry) continue;
     for (const runCase of testCase.RunCases ?? []) {
       if (Number(runCase.runId) !== Number(run.id)) continue;
       entry.runNames.push(run.name);
       if (runCase.status !== 0) entry.played = true;
       entry.verdicts += (runCase.Verdicts ?? []).length;
+      entry.comments += runCase.commentCount ?? 0;
     }
-    seen.set(testCase.id, entry);
   }
 }
 
 const keyOf = ({ testCase }) => `${planOf(testCase.folderId)}||${refFromTitle(testCase.title)}`;
-const isJudged = ({ played, verdicts }) => played || verdicts > 0;
+/**
+ * Ce cas porte-t-il le travail de quelqu'un ?
+ *
+ * Un avis, mais aussi un commentaire ou une pièce jointe : une capture d'écran
+ * attachée à un constat EST la preuve du défaut, et elle ne se supprime pas
+ * parce qu'un script a jugé le cas superflu.
+ */
+const hasHumanWork = ({ played, verdicts, comments, attachments }) =>
+  played || verdicts > 0 || comments > 0 || attachments > 0;
+
+/** Ce qu'il porte, en toutes lettres — pour que la liste le dise, pas seulement le compte. */
+const workLabel = (entry) => {
+  const parts = [];
+  if (entry.played || entry.verdicts > 0) parts.push('un avis');
+  if (entry.comments > 0) parts.push(entry.comments > 1 ? `${entry.comments} commentaires` : 'un commentaire');
+  if (entry.attachments > 0)
+    parts.push(entry.attachments > 1 ? `${entry.attachments} pièces jointes` : 'une pièce jointe');
+  return parts.length > 0 ? `  ⚠ porte ${parts.join(', ')}` : '';
+};
 
 const entries = [...seen.values()];
 const orphans = entries.filter((e) => !defined.has(keyOf(e)));
@@ -179,7 +211,7 @@ for (const entry of entries) {
 const duplicates = [];
 for (const [key, members] of groups) {
   if (members.length < 2) continue;
-  const judged = members.filter(isJudged);
+  const judged = members.filter(hasHumanWork);
   // Plusieurs avis sur une même référence : personne ne peut arbitrer d'ici
   // lequel fait foi. On liste, on ne touche à rien.
   const keep =
@@ -192,19 +224,21 @@ for (const [key, members] of groups) {
     key,
     members,
     keep,
-    extras: keep ? members.filter((m) => m !== keep && !isJudged(m)) : [],
+    extras: keep ? members.filter((m) => m !== keep && !hasHumanWork(m)) : [],
   });
 }
 
 const describe = (entry, prefix = '  ') => {
   const { testCase, runNames } = entry;
-  const marque = isJudged(entry) ? '  ⚠ porte un avis' : '';
+  const marque = workLabel(entry);
   console.log(`${prefix}#${testCase.id}  ${pathOf(testCase.folderId)}`);
   console.log(`${prefix}       ${String(testCase.title).slice(0, 96)}`);
   console.log(`${prefix}       ${runNames.join(', ') || 'aucune campagne'}${marque}`);
 };
 
-console.log(`\nProjet : ${project.name}  ·  ${seen.size} cas en campagne  ·  pivot : ${payload.cases.length} cas\n`);
+console.log(
+  `\nProjet : ${project.name}  ·  ${seen.size} cas  ·  ${runs.length} campagne(s)  ·  pivot : ${payload.cases.length} cas\n`
+);
 
 if (orphans.length > 0) {
   console.log(`${orphans.length} cas que les plans ne définissent plus :\n`);
@@ -218,7 +252,13 @@ if (duplicates.length > 0) {
     console.log(`  ${key.replace('||', ' / ')} — ${members.length} exemplaires`);
     for (const entry of members) {
       const role =
-        keep === entry ? 'gardé' : keep === null ? 'à arbitrer' : isJudged(entry) ? 'gardé (jugé)' : 'en trop';
+        keep === entry
+          ? 'gardé'
+          : keep === null
+            ? 'à arbitrer'
+            : hasHumanWork(entry)
+              ? 'gardé (porte du travail)'
+              : 'en trop';
       describe(entry, '    ');
       console.log(`           → ${role}`);
     }
@@ -231,12 +271,32 @@ if (orphans.length === 0 && duplicates.length === 0) {
   process.exit(0);
 }
 
-const removable = [...orphans.filter((e) => !isJudged(e)), ...duplicates.flatMap((d) => d.extras)];
-const manual = [...orphans.filter(isJudged), ...duplicates.filter((d) => d.keep === null).flatMap((d) => d.members)];
+// Les pièces jointes ne sont pas servies par la liste : on les demande cas par
+// cas, et seulement pour les candidats. Mieux vaut quelques requêtes de plus que
+// supprimer la capture d'écran qui prouvait un défaut.
+const candidates = [...orphans.filter((e) => !hasHumanWork(e)), ...duplicates.flatMap((d) => d.extras)];
+for (const entry of candidates) {
+  const detail = await api('GET', `/cases/${entry.testCase.id}`).catch(() => null);
+  entry.attachments = (detail?.Attachments ?? []).length;
+  entry.comments = Math.max(entry.comments, (detail?.Comments ?? []).length);
+}
+
+const removable = candidates.filter((e) => !hasHumanWork(e));
+const spared = candidates.filter(hasHumanWork);
+if (spared.length > 0) {
+  console.log(`${spared.length} candidat(s) écarté(s) : ils portent des commentaires ou des pièces jointes.\n`);
+  for (const entry of spared) describe(entry);
+  console.log();
+}
+const manual = [
+  ...orphans.filter(hasHumanWork),
+  ...spared,
+  ...duplicates.filter((d) => d.keep === null).flatMap((d) => d.members),
+];
 
 console.log(`${removable.length} supprimables, ${manual.length} à regarder à la main.`);
 if (manual.length > 0) {
-  console.log("Un cas que quelqu'un a jugé n'est pas un déchet : il se traite dans l'interface.");
+  console.log("Un cas qui porte le travail de quelqu'un n'est pas un déchet : il se traite dans l'interface.");
 }
 
 if (!DELETE) {
