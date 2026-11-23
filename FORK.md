@@ -184,8 +184,13 @@ donc ni rebuild ni migration.**
 
 ### Sur Coolify
 
-1. Nouvelle ressource → **Docker Compose**, source = ce dépôt, branche `main`.
-   Le `docker-compose.yaml` est à la racine, rien à adapter.
+1. Nouvelle ressource → **Docker Compose**, source = ce dépôt, branche
+   **`funnel`**. Le `docker-compose.yaml` est à la racine, rien à adapter.
+
+   **Pas `main`** : c'est le miroir de la production de l'amont, figé à leur
+   dernière livraison. Déployer `main` servirait un instantané sans notre
+   importeur, sans le suivi des testeurs et sans nos correctifs.
+
 2. Variables : **`SECRET_KEY`** et `FRONTEND_ORIGIN=https://<ton-sous-domaine>`.
    Générer la clé avec `openssl rand -base64 48`, et **ne la coller nulle part
    ailleurs** — c'est elle qui signe les jetons de session.
