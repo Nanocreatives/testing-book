@@ -19,6 +19,8 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { refuseReporter } from './lib/membership.mjs';
+
 const arg = (name, fallback) => {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
   return hit ? hit.slice(name.length + 3) : fallback;
@@ -127,6 +129,13 @@ if (!project) {
   console.error('Projets disponibles :', projects.map((p) => p.name).join(' | '));
   process.exit(1);
 }
+
+await refuseReporter({
+  api,
+  project,
+  email: EMAIL,
+  why: 'Un cas modifié et joué par quelqu’un d’autre serait donc absent, et le\nscript conclurait qu’il n’y a rien à remettre à faire.',
+});
 
 const folders = rows(await api('GET', '/folders', { query: { projectId: project.id } }));
 const folderById = new Map(folders.map((f) => [f.id, f]));

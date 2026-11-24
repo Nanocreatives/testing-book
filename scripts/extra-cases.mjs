@@ -17,6 +17,8 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import { refuseReporter } from './lib/membership.mjs';
+
 const arg = (name, fallback) => {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
   return hit ? hit.slice(name.length + 3) : fallback;
@@ -97,6 +99,13 @@ if (!project) {
   console.error('Projets disponibles :', projects.map((p) => p.name).join(' | '));
   process.exit(1);
 }
+
+await refuseReporter({
+  api,
+  project,
+  email: EMAIL,
+  why: 'Les statuts et les avis lui seraient donc invisibles, et un cas que\nquelqu’un a joué passerait pour un déchet supprimable.',
+});
 
 // Les dossiers de l'instance, pour retrouver où chaque cas est rangé.
 const folders = rows(await api('GET', '/folders', { query: { projectId: project.id } }));
