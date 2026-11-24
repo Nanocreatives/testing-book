@@ -289,6 +289,25 @@ log('Cas      ');
 const toutLesCas = await api('GET', '/cases/byproject', {
   query: { projectId: project.id, runId: runReference.id },
 });
+
+// Les cas qui portent un statut, TOUTES campagnes confondues.
+//
+// `/cases/byproject` ne remplit `RunCases` que pour le `runId` demandé : lu avec
+// la seule campagne de référence, il rend un tableau vide pour tout cas des
+// autres vagues. S'y fier faisait répondre « aucun cas joué modifié » sans
+// jamais avoir regardé les vagues 1 à 9 — un zéro rassurant et faux.
+//
+// Et on relit les campagnes du PROJET, pas celles que le pivot décrit : une
+// campagne archivée ou créée à la main porte des statuts que l'import écraserait
+// sans un mot. Le relevé doit couvrir ce qui existe, pas ce qu'on attendait.
+const campagnesDuProjet = await api('GET', '/runs', { query: { projectId: project.id } });
+const casJoues = new Set();
+for (const run of Array.isArray(campagnesDuProjet) ? campagnesDuProjet : []) {
+  const cas = await api('GET', '/cases/byproject', { query: { projectId: project.id, runId: run.id } });
+  for (const c of Array.isArray(cas) ? cas : []) {
+    if ((c.RunCases ?? []).some((rc) => rc.status && rc.status !== 0)) casJoues.add(c.id);
+  }
+}
 // Indexé par DOSSIER + titre, et non par titre seul : des plans différents
 // portent des cas de même identifiant — `PRE-02` existe dans le plan 05 et dans
 // le plan 14. Avec une clé sur le seul titre, les deux n'en font qu'un : ils
@@ -310,7 +329,7 @@ const joues = [];
 // garde celui qui porte un STATUT — c'est là qu'est le travail de la testeuse —
 // et à défaut le plus ancien. L'autre est signalé, jamais supprimé : il peut
 // porter des commentaires ou des pièces que seul un humain sait arbitrer.
-const aUnStatut = (c) => (c.RunCases ?? []).some((rc) => rc.status && rc.status !== 0);
+const aUnStatut = (c) => casJoues.has(c.id);
 for (const c of Array.isArray(toutLesCas) ? toutLesCas : []) {
   const k = cle(c.folderId, refDuTitre(c.title));
   const garde = casParCle.get(k);
