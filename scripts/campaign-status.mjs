@@ -53,10 +53,17 @@ const api = async (method, path, { query, body } = {}) => {
 
 const rows = (payload) => (Array.isArray(payload) ? payload : (payload?.data ?? []));
 
-const session = await api('POST', '/users/signin', { body: { email: EMAIL, password: PASSWORD } });
-token = session.access_token ?? session.token ?? session.accessToken;
+// Un mot de passe refusé est banal : il ne mérite pas une pile d'appels Node.
+try {
+  const session = await api('POST', '/users/signin', { body: { email: EMAIL, password: PASSWORD } });
+  token = session.access_token ?? session.token ?? session.accessToken;
+} catch {
+  console.error(`\nConnexion refusée sur ${BASE} : vérifier l'adresse et le mot de passe.`);
+  process.exit(1);
+}
 if (!token) {
-  throw new Error('Pas de jeton dans la réponse de connexion');
+  console.error('\nConnexion acceptée mais aucun jeton renvoyé.');
+  process.exit(1);
 }
 
 const projects = rows(await api('GET', '/projects'));
