@@ -296,8 +296,13 @@ const toutLesCas = await api('GET', '/cases/byproject', {
 // la seule campagne de référence, il rend un tableau vide pour tout cas des
 // autres vagues. S'y fier faisait répondre « aucun cas joué modifié » sans
 // jamais avoir regardé les vagues 1 à 9 — un zéro rassurant et faux.
+//
+// Et on relit les campagnes du PROJET, pas celles que le pivot décrit : une
+// campagne archivée ou créée à la main porte des statuts que l'import écraserait
+// sans un mot. Le relevé doit couvrir ce qui existe, pas ce qu'on attendait.
+const campagnesDuProjet = await api('GET', '/runs', { query: { projectId: project.id } });
 const casJoues = new Set();
-for (const run of runParVague.values()) {
+for (const run of Array.isArray(campagnesDuProjet) ? campagnesDuProjet : []) {
   const cas = await api('GET', '/cases/byproject', { query: { projectId: project.id, runId: run.id } });
   for (const c of Array.isArray(cas) ? cas : []) {
     if ((c.RunCases ?? []).some((rc) => rc.status && rc.status !== 0)) casJoues.add(c.id);
