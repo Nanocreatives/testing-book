@@ -50,6 +50,12 @@ une ligne de commande est visible de tout le système. En développement, le
 backend sert ses routes à la racine — ajouter `--api-path=` (vide), car le
 préfixe `/api` n'existe qu'en production, où `entrypoint.js` le monte.
 
+**Une vague neuve se déclare des deux côtés.** `focus-qa` décide qu'un plan
+appartient à la vague N ; `WAVE_TITLES` dans `scripts/import.mjs` lui donne son
+nom de campagne. Oublier le second produit une campagne sans nom, refusée par
+l'API — l'import s'arrête désormais avant d'écrire quoi que ce soit, en nommant
+la vague en cause.
+
 **L'import est idempotent** : relancer met à jour les énoncés, crée ce qui
 manque, et ne réécrit **jamais** un statut déjà saisi par un testeur. Vérifié
 sur 1020 cas : second passage, 0 créé, 0 modifié, 1020 inchangés.
