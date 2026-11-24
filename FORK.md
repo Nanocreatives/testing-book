@@ -81,6 +81,33 @@ liste des cas lui est filtrée alors que le comptage des avis porte sur toute la
 campagne, et les colonnes se contrediraient. Le script refuse de tourner dans ce
 cas plutôt que de rendre un chiffre faux mais plausible.
 
+## Décider avant de réécrire
+
+```bash
+TCMS_PASSWORD=… node scripts/changed-cases.mjs --before=/tmp/pivot-avant.json --url=https://… --email=…
+```
+
+Compare deux versions des plans et dit, parmi les cas dont le texte a changé,
+lesquels sont **déjà joués**.
+
+L'import sait aussi les signaler — mais il le dit **en écrivant** : quand sa
+liste s'affiche, les énoncés sont déjà remplacés. Ici rien n'est touché, et la
+décision se prend avant.
+
+Il sépare les deux natures de changement, parce que l'arbitrage tient à cette
+distinction. Un **énoncé réécrit** pose une autre question, et l'avis déjà donné
+répondait à l'ancienne. Une **précondition** qui bouge ne change que le
+contexte — et comme elle s'hérite de la section, elle touche tous ses cas d'un
+coup. Les mélanger noierait les quelques vrais dans des dizaines de faux : lors
+de la passe de novembre, 38 cas modifiés se répartissaient en 13 énoncés et 25
+contextes.
+
+Le pivot « avant » se régénère depuis l'historique de `focus-qa` :
+
+```bash
+git -C ../focus-qa worktree add --detach /tmp/qa-avant <sha> && (cd /tmp/qa-avant && node scripts/export-cases.mjs && cp out/cases.json /tmp/pivot-avant.json) && git -C ../focus-qa worktree remove --force /tmp/qa-avant
+```
+
 ## Nettoyer les cas en trop
 
 ```bash
