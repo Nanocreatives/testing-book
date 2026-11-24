@@ -114,8 +114,12 @@ const WAVE_CONTINU = 'En continu — transverse';
 // Une vague que le pivot porte et dont le titre manque ici produirait une
 // campagne sans nom — refusée par l'API au milieu de l'import, une fois les
 // dossiers déjà créés. Le dire avant de toucher à l'instance.
+//
+// `Object.hasOwn` et non une simple lecture : `WAVE_TITLES['toString']` rend
+// une fonction héritée du prototype, qui passerait le contrôle pour échouer
+// plus loin — exactement ce que ce garde-fou existe pour éviter.
 const vaguesSansTitre = (cases) => [
-  ...new Set(cases.filter((c) => c.wave !== null && !WAVE_TITLES[c.wave]).map((c) => c.wave)),
+  ...new Set(cases.filter((c) => c.wave !== null && !Object.hasOwn(WAVE_TITLES, c.wave)).map((c) => c.wave)),
 ];
 
 // --- Client HTTP -------------------------------------------------------------
