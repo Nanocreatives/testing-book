@@ -106,8 +106,21 @@ const WAVE_TITLES = {
   5: 'Vague 5 — La paie',
   6: 'Vague 6 — Les ventes',
   7: "Vague 7 — L'autre côté, et le cloisonnement",
+  8: 'Vague 8 — La signature',
+  9: 'Vague 9 — La facturation électronique',
 };
 const WAVE_CONTINU = 'En continu — transverse';
+
+// Une vague que le pivot porte et dont le titre manque ici produirait une
+// campagne sans nom — refusée par l'API au milieu de l'import, une fois les
+// dossiers déjà créés. Le dire avant de toucher à l'instance.
+//
+// `Object.hasOwn` et non une simple lecture : `WAVE_TITLES['toString']` rend
+// une fonction héritée du prototype, qui passerait le contrôle pour échouer
+// plus loin — exactement ce que ce garde-fou existe pour éviter.
+const vaguesSansTitre = (cases) => [
+  ...new Set(cases.filter((c) => c.wave !== null && !Object.hasOwn(WAVE_TITLES, c.wave)).map((c) => c.wave)),
+];
 
 // --- Client HTTP -------------------------------------------------------------
 
@@ -160,6 +173,16 @@ const plainText = (md) =>
 // --- Import ------------------------------------------------------------------
 
 const payload = JSON.parse(readFileSync(CASES, 'utf-8'));
+
+const orphelines = vaguesSansTitre(payload.cases);
+if (orphelines.length > 0) {
+  console.error(
+    `\nVague(s) sans titre dans l'import : ${orphelines.join(', ')}.\n` +
+      'Le pivot les porte, `WAVE_TITLES` ne les connaît pas, et une campagne sans\n' +
+      "nom est refusée par l'API. Ajouter leur titre avant de relancer.\n"
+  );
+  process.exit(1);
+}
 const stats = { folders: 0, cases: 0, updated: 0, inchanges: 0, runs: 0, runCases: 0, kept: 0, roles: 0, avis: 0 };
 
 const log = (s) => process.stdout.write(s);
