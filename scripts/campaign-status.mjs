@@ -10,6 +10,8 @@
 // Par l'API et non par le fichier SQLite, pour la même raison que l'import :
 // une instance déployée vit dans un volume Docker sur un serveur distant.
 
+import { refuseReporter } from './lib/membership.mjs';
+
 const arg = (name, fallback) => {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
   return hit ? hit.slice(name.length + 3) : fallback;
@@ -76,24 +78,12 @@ if (!project) {
   process.exit(1);
 }
 
-// Un `reporter` ne reçoit de `/cases/byproject` que les cas de son ressort,
-// quand `GET /runs/:id` compte toute la campagne. Les colonnes se
-// contrediraient sans que rien ne le dise — et un chiffre faux mais plausible
-// est précisément ce que ce script existe pour éviter.
-const REPORTER_ROLE = 2;
-const memberships = rows(await api('GET', '/members/check'));
-const membership = memberships.find((m) => Number(m.projectId) === Number(project.id));
-
-if (membership && !membership.isOwner && membership.role === REPORTER_ROLE) {
-  console.error(
-    `\nLe compte ${EMAIL} est « reporter » sur « ${project.name} ».\n\n` +
-      'La liste des cas lui est filtrée : il ne voit que les siens, alors que le\n' +
-      'comptage des avis porte sur toute la campagne. Les colonnes se\n' +
-      'contrediraient.\n\n' +
-      'Relancer avec un compte gestionnaire ou propriétaire du projet.'
-  );
-  process.exit(1);
-}
+await refuseReporter({
+  api,
+  project,
+  email: EMAIL,
+  why: 'Le comptage des avis porte lui sur toute la campagne : les colonnes se\ncontrediraient.',
+});
 
 console.log(`\nProjet : ${project.name}  (id ${project.id})\n`);
 
