@@ -505,6 +505,7 @@
     "project_detail": "项目详情",
     "test_url": "待测站点",
     "test_url_empty": "未设置地址",
+    "update_failed": "更新项目失败。",
     "project_owner": "项目所有者",
     "edit_project": "编辑项目",
     "publicity": "公开性",

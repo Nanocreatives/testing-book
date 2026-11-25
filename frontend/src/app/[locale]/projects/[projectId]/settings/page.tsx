@@ -22,6 +22,7 @@ export default function Page({ params }: { params: { projectId: string; locale: 
     projectDetail: t('project_detail'),
     testUrl: t('test_url'),
     testUrlEmpty: t('test_url_empty'),
+    updateFailed: t('update_failed'),
     projectOwner: t('project_owner'),
     editProject: t('edit_project'),
     public: t('public'),

@@ -505,6 +505,7 @@
     "project_detail": "プロジェクト詳細",
     "test_url": "テスト対象サイト",
     "test_url_empty": "アドレスが未設定です",
+    "update_failed": "プロジェクトの更新に失敗しました。",
     "project_owner": "所有者",
     "edit_project": "プロジェクトの編集",
     "publicity": "公開",

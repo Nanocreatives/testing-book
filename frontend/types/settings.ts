@@ -4,6 +4,7 @@ export type SettingsMessages = {
   projectDetail: string;
   testUrl: string;
   testUrlEmpty: string;
+  updateFailed: string;
   projectOwner: string;
   editProject: string;
   publicity: string;

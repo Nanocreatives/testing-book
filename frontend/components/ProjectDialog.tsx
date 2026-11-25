@@ -46,9 +46,8 @@ export default function ProjectDialog({ isOpen, editingProject, onCancel, onSubm
   //
   // Les champs partent vides : le dialogue est monté avant que le projet soit
   // chargé. Les remplir sur la seule identité du projet suffit tant que rien
-  // d'autre ne touche à cet état — mais `clear()` le vide après un envoi, et
-  // rien ne le remplissait au rouvrir. Lier la synchronisation à l'ouverture
-  // rend le dialogue juste quel que soit l'ordre des événements.
+  // d'autre ne touche à cet état. Lier la synchronisation à l'ouverture rend le
+  // dialogue juste quel que soit l'ordre du chargement, de l'envoi et du clic.
   useEffect(() => {
     if (!isOpen) {
       return;
@@ -86,24 +85,6 @@ export default function ProjectDialog({ isOpen, editingProject, onCancel, onSubm
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, editingProject]);
 
-  const clear = () => {
-    setProjectName({
-      isInvalid: false,
-      text: '',
-      errorMessage: '',
-    });
-    setProjectDetail({
-      isInvalid: false,
-      text: '',
-      errorMessage: '',
-    });
-    setTestUrl({
-      isInvalid: false,
-      text: '',
-      errorMessage: '',
-    });
-  };
-
   const validate = () => {
     if (!projectName.text) {
       setProjectName({
@@ -128,8 +109,11 @@ export default function ProjectDialog({ isOpen, editingProject, onCancel, onSubm
       return;
     }
 
+    // Les champs ne sont PAS vidés ici. L'envoi est asynchrone : les vider
+    // maintenant les laisse vides si le serveur refuse, et la personne doit
+    // ressaisir ce qu'elle venait d'écrire. La resynchronisation à l'ouverture
+    // s'en charge, une fois qu'on sait que ça a abouti.
     onSubmit(projectName.text, projectDetail.text, isProjectPublic, trimmedUrl);
-    clear();
   };
 
   return (
