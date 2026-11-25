@@ -83,11 +83,12 @@ async function fetchMyProjects(jwt: string) {
 /**
  * Create project
  */
-async function createProject(jwt: string, name: string, detail: string, isPublic: boolean) {
+async function createProject(jwt: string, name: string, detail: string, isPublic: boolean, testUrl: string) {
   const newProjectData = {
     name,
     detail,
     isPublic,
+    testUrl,
   };
 
   const fetchOptions = {
@@ -117,11 +118,19 @@ async function createProject(jwt: string, name: string, detail: string, isPublic
 /**
  * Update project
  */
-async function updateProject(jwt: string, projectId: number, name: string, detail: string, isPublic: boolean) {
+async function updateProject(
+  jwt: string,
+  projectId: number,
+  name: string,
+  detail: string,
+  isPublic: boolean,
+  testUrl: string
+) {
   const updatedProjectData = {
     name,
     detail,
     isPublic,
+    testUrl,
   };
 
   const fetchOptions = {

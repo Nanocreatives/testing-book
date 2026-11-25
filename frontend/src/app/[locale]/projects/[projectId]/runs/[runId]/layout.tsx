@@ -68,6 +68,7 @@ export default function RunLayout({
     clearAll: t('clear_all'),
     apply: t('apply'),
     selectStatus: t('select_status'),
+    openTestSite: t('open_test_site'),
     judgedBy: t('judged_by'),
     judgedByYou: t('judged_by_you'),
     verdictsDiverge: t('verdicts_diverge'),

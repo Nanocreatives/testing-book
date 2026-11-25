@@ -72,6 +72,7 @@ export function ProjectHome({
     name: '',
     detail: '',
     isPublic: false,
+    testUrl: null,
     userId: 0,
     createdAt: '',
     updatedAt: '',

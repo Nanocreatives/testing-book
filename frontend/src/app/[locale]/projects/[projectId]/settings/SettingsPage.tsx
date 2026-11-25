@@ -10,7 +10,8 @@ import { TokenContext } from '@/utils/TokenProvider';
 import { deleteProject, fetchProject, updateProject } from '@/utils/projectsControl';
 import { ProjectDialogMessages, ProjectType } from '@/types/project';
 import DeleteConfirmDialog from '@/components/DeleteConfirmDialog';
-import { useRouter } from '@/src/i18n/routing';
+import { useRouter, NextUiLinkClasses } from '@/src/i18n/routing';
+import { isSafeTestUrl } from '@/utils/testUrl';
 import ProjectDialog from '@/components/ProjectDialog';
 import { UserType } from '@/types/user';
 import { findUser } from '@/utils/usersControl';
@@ -33,6 +34,7 @@ export default function SettingsPage({ projectId, messages, stageMessages, proje
     name: '',
     detail: '',
     isPublic: false,
+    testUrl: null,
     userId: 0,
     createdAt: '',
     updatedAt: '',
@@ -75,8 +77,8 @@ export default function SettingsPage({ projectId, messages, stageMessages, proje
 
   // project dialog
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
-  const onSubmit = async (name: string, detail: string, isPublic: boolean) => {
-    const updatedProject = await updateProject(context.token.access_token, project.id, name, detail, isPublic);
+  const onSubmit = async (name: string, detail: string, isPublic: boolean, testUrl: string) => {
+    const updatedProject = await updateProject(context.token.access_token, project.id, name, detail, isPublic, testUrl);
     setProject(updatedProject);
     setIsProjectDialogOpen(false);
   };
@@ -130,6 +132,23 @@ export default function SettingsPage({ projectId, messages, stageMessages, proje
             <TableRow key="project-detail">
               <TableCell>{messages.projectDetail}</TableCell>
               <TableCell>{project.detail}</TableCell>
+            </TableRow>
+            <TableRow key="project-test-url">
+              <TableCell>{messages.testUrl}</TableCell>
+              <TableCell>
+                {isSafeTestUrl(project.testUrl) ? (
+                  <a
+                    href={project.testUrl as string}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={NextUiLinkClasses}
+                  >
+                    {project.testUrl}
+                  </a>
+                ) : (
+                  <span className="text-default-400">{messages.testUrlEmpty}</span>
+                )}
+              </TableCell>
             </TableRow>
             <TableRow key="project-owner">
               <TableCell>{messages.projectOwner}</TableCell>

@@ -6,6 +6,8 @@ export type ProjectType = {
   name: string;
   detail: string;
   isPublic: boolean;
+  /** L'adresse du site à tester, ou null. Validée au serveur, revérifiée à l'affichage. */
+  testUrl: string | null;
   userId: number;
   createdAt: string;
   updatedAt: string;
@@ -17,6 +19,9 @@ export type ProjectDialogMessages = {
   project: string;
   projectName: string;
   projectDetail: string;
+  testUrl: string;
+  testUrlHint: string;
+  testUrlInvalid: string;
   public: string;
   private: string;
   ifYouMakePublic: string;
