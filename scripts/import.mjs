@@ -108,6 +108,7 @@ const WAVE_TITLES = {
   7: "Vague 7 — L'autre côté, et le cloisonnement",
   8: 'Vague 8 — La signature',
   9: 'Vague 9 — La facturation électronique',
+  10: 'Vague 10 — La doctrine « contrat finalisé »',
 };
 const WAVE_CONTINU = 'En continu — transverse';
 
