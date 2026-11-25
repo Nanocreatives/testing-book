@@ -505,6 +505,7 @@
     "project_detail": "Description du projet",
     "test_url": "Site à tester",
     "test_url_empty": "Aucune adresse définie",
+    "update_failed": "La mise à jour du projet a échoué.",
     "project_owner": "Propriétaire du projet",
     "edit_project": "Modifier le projet",
     "publicity": "Visibilité",

@@ -505,6 +505,7 @@
     "project_detail": "Detalhe do Projeto",
     "test_url": "Site a testar",
     "test_url_empty": "Nenhum endereço definido",
+    "update_failed": "Falha ao atualizar o projeto.",
     "project_owner": "Dono do Projeto",
     "edit_project": "Editar Projeto",
     "publicity": "Publicidade",

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useContext } from 'react';
-import { Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@heroui/react';
+import { Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, addToast } from '@heroui/react';
 import { Pencil, Trash } from 'lucide-react';
 import ProjectTagsManager from './ProjectTagsManager';
 import ProjectStagesManager from './ProjectStagesManager';
@@ -78,9 +78,24 @@ export default function SettingsPage({ projectId, messages, stageMessages, proje
   // project dialog
   const [isProjectDialogOpen, setIsProjectDialogOpen] = useState(false);
   const onSubmit = async (name: string, detail: string, isPublic: boolean, testUrl: string) => {
-    const updatedProject = await updateProject(context.token.access_token, project.id, name, detail, isPublic, testUrl);
-    setProject(updatedProject);
-    setIsProjectDialogOpen(false);
+    // Un refus laissait la modale ouverte sans un mot, et la personne devant des
+    // champs qu'elle croyait enregistrés. Le dialogue reste ouvert à dessein :
+    // ce qu'elle a saisi y est encore, elle corrige et renvoie.
+    try {
+      const updatedProject = await updateProject(
+        context.token.access_token,
+        project.id,
+        name,
+        detail,
+        isPublic,
+        testUrl
+      );
+      setProject(updatedProject);
+      setIsProjectDialogOpen(false);
+    } catch (error: unknown) {
+      logError('Error updating project', error);
+      addToast({ title: messages.projectManagement, color: 'danger', description: messages.updateFailed });
+    }
   };
 
   // delete confirm dialog

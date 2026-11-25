@@ -505,6 +505,7 @@
     "project_detail": "Project Detail",
     "test_url": "Site under test",
     "test_url_empty": "No address set",
+    "update_failed": "Updating the project failed.",
     "project_owner": "Project Owner",
     "edit_project": "Edit Project",
     "publicity": "Publicity",

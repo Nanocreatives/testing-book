@@ -42,54 +42,27 @@ export default function ProjectDialog({ isOpen, editingProject, onCancel, onSubm
 
   const [isProjectPublic, setIsProjectPublic] = useState(editingProject ? editingProject.isPublic : true);
 
+  // Resynchronisé à chaque OUVERTURE, et pas seulement quand le projet change.
+  //
+  // Les champs partent vides : le dialogue est monté avant que le projet soit
+  // chargé. Les remplir sur la seule identité du projet suffit tant que rien
+  // d'autre ne touche à cet état. Lier la synchronisation à l'ouverture rend le
+  // dialogue juste quel que soit l'ordre du chargement, de l'envoi et du clic.
   useEffect(() => {
-    if (editingProject) {
-      setProjectName({
-        ...projectName,
-        text: editingProject.name,
-      });
-
-      setProjectDetail({
-        ...projectDetail,
-        text: editingProject.detail ? editingProject.detail : '',
-      });
-
-      setTestUrl({ text: editingProject.testUrl ?? '', isInvalid: false, errorMessage: '' });
-
-      setIsProjectPublic(editingProject.isPublic);
-    } else {
-      setProjectName({
-        ...projectName,
-        text: '',
-      });
-
-      setProjectDetail({
-        ...projectDetail,
-        text: '',
-      });
-
-      setIsProjectPublic(true);
+    if (!isOpen) {
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingProject]);
 
-  const clear = () => {
-    setProjectName({
-      isInvalid: false,
-      text: '',
-      errorMessage: '',
-    });
-    setProjectDetail({
-      isInvalid: false,
-      text: '',
-      errorMessage: '',
-    });
-    setTestUrl({
-      isInvalid: false,
-      text: '',
-      errorMessage: '',
-    });
-  };
+    // Chaque champ est reposé ENTIER, erreur comprise. Étendre l'état précédent
+    // reconduirait le refus d'une saisie corrigée depuis : un nom valide
+    // s'afficherait en rouge, avec le message de la fois d'avant.
+    const vierge = { isInvalid: false, errorMessage: '' };
+
+    setProjectName({ ...vierge, text: editingProject ? editingProject.name : '' });
+    setProjectDetail({ ...vierge, text: editingProject?.detail ? editingProject.detail : '' });
+    setTestUrl({ ...vierge, text: editingProject?.testUrl ?? '' });
+    setIsProjectPublic(editingProject ? editingProject.isPublic : true);
+  }, [isOpen, editingProject]);
 
   const validate = () => {
     if (!projectName.text) {
@@ -115,8 +88,11 @@ export default function ProjectDialog({ isOpen, editingProject, onCancel, onSubm
       return;
     }
 
+    // Les champs ne sont PAS vidés ici. L'envoi est asynchrone : les vider
+    // maintenant les laisse vides si le serveur refuse, et la personne doit
+    // ressaisir ce qu'elle venait d'écrire. La resynchronisation à l'ouverture
+    // s'en charge, une fois qu'on sait que ça a abouti.
     onSubmit(projectName.text, projectDetail.text, isProjectPublic, trimmedUrl);
-    clear();
   };
 
   return (
