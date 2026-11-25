@@ -53,36 +53,15 @@ export default function ProjectDialog({ isOpen, editingProject, onCancel, onSubm
       return;
     }
 
-    if (editingProject) {
-      setProjectName({
-        ...projectName,
-        text: editingProject.name,
-      });
+    // Chaque champ est reposé ENTIER, erreur comprise. Étendre l'état précédent
+    // reconduirait le refus d'une saisie corrigée depuis : un nom valide
+    // s'afficherait en rouge, avec le message de la fois d'avant.
+    const vierge = { isInvalid: false, errorMessage: '' };
 
-      setProjectDetail({
-        ...projectDetail,
-        text: editingProject.detail ? editingProject.detail : '',
-      });
-
-      setTestUrl({ text: editingProject.testUrl ?? '', isInvalid: false, errorMessage: '' });
-
-      setIsProjectPublic(editingProject.isPublic);
-    } else {
-      setProjectName({
-        ...projectName,
-        text: '',
-      });
-
-      setProjectDetail({
-        ...projectDetail,
-        text: '',
-      });
-
-      setTestUrl({ text: '', isInvalid: false, errorMessage: '' });
-
-      setIsProjectPublic(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setProjectName({ ...vierge, text: editingProject ? editingProject.name : '' });
+    setProjectDetail({ ...vierge, text: editingProject?.detail ? editingProject.detail : '' });
+    setTestUrl({ ...vierge, text: editingProject?.testUrl ?? '' });
+    setIsProjectPublic(editingProject ? editingProject.isPublic : true);
   }, [isOpen, editingProject]);
 
   const validate = () => {
