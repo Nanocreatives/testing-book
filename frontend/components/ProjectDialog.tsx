@@ -17,7 +17,7 @@ type Props = {
   isOpen: boolean;
   editingProject: ProjectType | null;
   onCancel: () => void;
-  onSubmit: (name: string, detail: string, isPublic: boolean) => void;
+  onSubmit: (name: string, detail: string, isPublic: boolean, testUrl: string) => void;
   projectDialogMessages: ProjectDialogMessages;
 };
 
@@ -30,6 +30,12 @@ export default function ProjectDialog({ isOpen, editingProject, onCancel, onSubm
 
   const [projectDetail, setProjectDetail] = useState({
     text: editingProject ? editingProject.detail : '',
+    isInvalid: false,
+    errorMessage: '',
+  });
+
+  const [testUrl, setTestUrl] = useState({
+    text: editingProject?.testUrl ?? '',
     isInvalid: false,
     errorMessage: '',
   });
@@ -47,6 +53,8 @@ export default function ProjectDialog({ isOpen, editingProject, onCancel, onSubm
         ...projectDetail,
         text: editingProject.detail ? editingProject.detail : '',
       });
+
+      setTestUrl({ text: editingProject.testUrl ?? '', isInvalid: false, errorMessage: '' });
 
       setIsProjectPublic(editingProject.isPublic);
     } else {
@@ -76,6 +84,11 @@ export default function ProjectDialog({ isOpen, editingProject, onCancel, onSubm
       text: '',
       errorMessage: '',
     });
+    setTestUrl({
+      isInvalid: false,
+      text: '',
+      errorMessage: '',
+    });
   };
 
   const validate = () => {
@@ -89,7 +102,20 @@ export default function ProjectDialog({ isOpen, editingProject, onCancel, onSubm
       return;
     }
 
-    onSubmit(projectName.text, projectDetail.text, isProjectPublic);
+    // Le serveur refuse pour de bon ; cette vérification évite l'aller-retour et
+    // dit où est l'erreur. Les deux sont nécessaires : celle-ci ne protège rien.
+    const trimmedUrl = testUrl.text.trim();
+    if (trimmedUrl !== '' && !/^https?:\/\//i.test(trimmedUrl)) {
+      setTestUrl({
+        text: testUrl.text,
+        isInvalid: true,
+        errorMessage: projectDialogMessages.testUrlInvalid,
+      });
+
+      return;
+    }
+
+    onSubmit(projectName.text, projectDetail.text, isProjectPublic, trimmedUrl);
     clear();
   };
 
@@ -126,6 +152,19 @@ export default function ProjectDialog({ isOpen, editingProject, onCancel, onSubm
                 ...projectDetail,
                 text: e.target.value,
               });
+            }}
+          />
+          <Input
+            type="url"
+            inputMode="url"
+            label={projectDialogMessages.testUrl}
+            placeholder="https://staging.exemple.com"
+            description={projectDialogMessages.testUrlHint}
+            value={testUrl.text}
+            isInvalid={testUrl.isInvalid}
+            errorMessage={testUrl.errorMessage}
+            onChange={(e) => {
+              setTestUrl({ text: e.target.value, isInvalid: false, errorMessage: '' });
             }}
           />
           <Checkbox isSelected={isProjectPublic} onValueChange={setIsProjectPublic}>

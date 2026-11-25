@@ -37,6 +37,7 @@ import {
   FileJson,
   ChevronRight,
   Folder,
+  ExternalLink,
   Filter,
   Lock,
   UserCog,
@@ -85,6 +86,8 @@ import { TestTypeMessages } from '@/types/testType';
 import { MemberType } from '@/types/user';
 import { logError } from '@/utils/errorHandler';
 import ResizablePanes from '@/components/ResizablePane';
+import { fetchProject } from '@/utils/projectsControl';
+import { isSafeTestUrl } from '@/utils/testUrl';
 import TreeItem from '@/components/TreeItem';
 import { buildFolderTree } from '@/utils/buildFolderTree';
 import { isCaseInRun, pruneFoldersToCases } from '@/utils/runCaseScope';
@@ -149,6 +152,9 @@ export default function RunEditor({
   const [isNameInvalid] = useState<boolean>(false);
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [isDirty, setIsDirty] = useState(false);
+  // L'adresse du site à tester, portée par le projet : un testeur l'ouvre depuis
+  // la campagne plutôt que de la chercher ailleurs.
+  const [testUrl, setTestUrl] = useState<string | null>(null);
   const [searchFilter, setSearchFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<number[]>([]);
   const [tagFilter, setTagFilter] = useState<number[]>([]);
@@ -269,6 +275,8 @@ export default function RunEditor({
         setMembers(membersData || []);
         const runsData = await fetchRuns(tokenContext.token.access_token, Number(projectId));
         setSiblingRuns(runsData || []);
+        const projectData = await fetchProject(tokenContext.token.access_token, Number(projectId));
+        setTestUrl(projectData?.testUrl ?? null);
       } catch (error: unknown) {
         logError('Error fetching run data', error);
       }
@@ -609,6 +617,20 @@ export default function RunEditor({
               </DropdownItem>
             </DropdownMenu>
           </Dropdown>
+          {isSafeTestUrl(testUrl) && (
+            <Button
+              as="a"
+              href={testUrl as string}
+              target="_blank"
+              rel="noopener noreferrer"
+              size="sm"
+              variant="flat"
+              color="primary"
+              startContent={<ExternalLink size={16} />}
+            >
+              {messages.openTestSite}
+            </Button>
+          )}
           <Button
             startContent={
               <Badge isInvisible={!isDirty} color="danger" size="sm" content="" shape="circle">

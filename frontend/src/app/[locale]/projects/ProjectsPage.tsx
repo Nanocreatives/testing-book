@@ -49,8 +49,8 @@ export default function ProjectsPage({ messages, projectDialogMessages, locale }
     setEditingProject(null);
   };
 
-  const onSubmit = async (name: string, detail: string, isPublic: boolean) => {
-    const newProject = await createProject(context.token.access_token, name, detail, isPublic);
+  const onSubmit = async (name: string, detail: string, isPublic: boolean, testUrl: string) => {
+    const newProject = await createProject(context.token.access_token, name, detail, isPublic, testUrl);
     setProjects([...projects, newProject]);
 
     // refresh project roles

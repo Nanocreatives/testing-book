@@ -12,6 +12,11 @@ function defineProject(sequelize, DataTypes) {
       type: DataTypes.BOOLEAN,
       allowNull: false,
     },
+    /** L'adresse du site à tester — validée à l'écriture, revérifiée à l'affichage. */
+    testUrl: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,

@@ -120,6 +120,7 @@ type RunMessages = {
   clearAll: string;
   apply: string;
   selectStatus: string;
+  openTestSite: string;
   judgedBy: string;
   judgedByYou: string;
   verdictsDiverge: string;
