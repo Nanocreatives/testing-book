@@ -42,7 +42,18 @@ export default function ProjectDialog({ isOpen, editingProject, onCancel, onSubm
 
   const [isProjectPublic, setIsProjectPublic] = useState(editingProject ? editingProject.isPublic : true);
 
+  // Resynchronisé à chaque OUVERTURE, et pas seulement quand le projet change.
+  //
+  // Les champs partent vides : le dialogue est monté avant que le projet soit
+  // chargé. Les remplir sur la seule identité du projet suffit tant que rien
+  // d'autre ne touche à cet état — mais `clear()` le vide après un envoi, et
+  // rien ne le remplissait au rouvrir. Lier la synchronisation à l'ouverture
+  // rend le dialogue juste quel que soit l'ordre des événements.
   useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
     if (editingProject) {
       setProjectName({
         ...projectName,
@@ -68,10 +79,12 @@ export default function ProjectDialog({ isOpen, editingProject, onCancel, onSubm
         text: '',
       });
 
+      setTestUrl({ text: '', isInvalid: false, errorMessage: '' });
+
       setIsProjectPublic(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingProject]);
+  }, [isOpen, editingProject]);
 
   const clear = () => {
     setProjectName({
