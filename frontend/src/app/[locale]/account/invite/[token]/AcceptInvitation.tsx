@@ -129,57 +129,66 @@ export default function AcceptInvitation({ token, locale, messages }: Props) {
 
           {errorMessage && <div className="my-3 text-danger">{errorMessage}</div>}
 
-          {!isSignedIn && (
-            <>
-              <Input
-                isRequired
-                size="sm"
-                type="email"
-                variant="bordered"
-                label={messages.email}
-                value={email}
-                onValueChange={setEmail}
-                className="mt-3"
-              />
-              <Input
-                isRequired
-                size="sm"
-                variant="bordered"
-                label={messages.username}
-                value={username}
-                onValueChange={setUsername}
-                className="mt-3"
-              />
-              <Input
-                isRequired
-                size="sm"
-                type="password"
-                variant="bordered"
-                label={messages.password}
-                value={password}
-                onValueChange={setPassword}
-                autoComplete="new-password"
-                className="mt-3"
-              />
-              <Input
-                isRequired
-                size="sm"
-                type="password"
-                variant="bordered"
-                label={messages.confirmPassword}
-                value={confirmPassword}
-                onValueChange={setConfirmPassword}
-                autoComplete="new-password"
-                className="mt-3"
-              />
-            </>
-          )}
+          {/* Quatre champs à remplir puis un seul bouton : sans `form`, la touche
+              Entrée ne fait rien et il faut descendre à la souris. */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              onJoin();
+            }}
+          >
+            {!isSignedIn && (
+              <>
+                <Input
+                  isRequired
+                  size="sm"
+                  type="email"
+                  variant="bordered"
+                  label={messages.email}
+                  value={email}
+                  onValueChange={setEmail}
+                  className="mt-3"
+                />
+                <Input
+                  isRequired
+                  size="sm"
+                  variant="bordered"
+                  label={messages.username}
+                  value={username}
+                  onValueChange={setUsername}
+                  className="mt-3"
+                />
+                <Input
+                  isRequired
+                  size="sm"
+                  type="password"
+                  variant="bordered"
+                  label={messages.password}
+                  value={password}
+                  onValueChange={setPassword}
+                  autoComplete="new-password"
+                  className="mt-3"
+                />
+                <Input
+                  isRequired
+                  size="sm"
+                  type="password"
+                  variant="bordered"
+                  label={messages.confirmPassword}
+                  value={confirmPassword}
+                  onValueChange={setConfirmPassword}
+                  autoComplete="new-password"
+                  className="mt-3"
+                />
+              </>
+            )}
 
-          <div className="mt-4 flex justify-end">
-            <Button size="sm" color="primary" isLoading={isJoining} onPress={onJoin}>
-              {messages.join}
-            </Button>
-          </div>
+            <div className="mt-4 flex justify-end">
+              <Button type="submit" size="sm" color="primary" isLoading={isJoining}>
+                {messages.join}
+              </Button>
+            </div>
+          </form>
         </CardBody>
       </Card>
     </div>
