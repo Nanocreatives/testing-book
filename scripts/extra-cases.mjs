@@ -18,6 +18,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { refuseReporter } from './lib/membership.mjs';
+import { countHumanTags, hasHumanWork, workLabel } from './lib/humanWork.mjs';
 
 const arg = (name, fallback) => {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
@@ -159,7 +160,15 @@ const seen = new Map();
 for (const folder of folders) {
   const cases = rows(await api('GET', '/cases', { query: { folderId: folder.id } }));
   for (const testCase of cases) {
-    seen.set(testCase.id, { testCase, played: false, verdicts: 0, comments: 0, attachments: 0, runNames: [] });
+    seen.set(testCase.id, {
+      testCase,
+      played: false,
+      verdicts: 0,
+      comments: 0,
+      attachments: 0,
+      humanTags: countHumanTags(testCase.Tags),
+      runNames: [],
+    });
   }
 }
 
@@ -181,26 +190,6 @@ for (const run of runs) {
 }
 
 const keyOf = ({ testCase }) => `${planOf(testCase.folderId)}||${refFromTitle(testCase.title)}`;
-/**
- * Ce cas porte-t-il le travail de quelqu'un ?
- *
- * Un avis, mais aussi un commentaire ou une pièce jointe : une capture d'écran
- * attachée à un constat EST la preuve du défaut, et elle ne se supprime pas
- * parce qu'un script a jugé le cas superflu.
- */
-const hasHumanWork = ({ played, verdicts, comments, attachments }) =>
-  played || verdicts > 0 || comments > 0 || attachments > 0;
-
-/** Ce qu'il porte, en toutes lettres — pour que la liste le dise, pas seulement le compte. */
-const workLabel = (entry) => {
-  const parts = [];
-  if (entry.played || entry.verdicts > 0) parts.push('un avis');
-  if (entry.comments > 0) parts.push(entry.comments > 1 ? `${entry.comments} commentaires` : 'un commentaire');
-  if (entry.attachments > 0)
-    parts.push(entry.attachments > 1 ? `${entry.attachments} pièces jointes` : 'une pièce jointe');
-  return parts.length > 0 ? `  ⚠ porte ${parts.join(', ')}` : '';
-};
-
 const entries = [...seen.values()];
 const orphans = entries.filter((e) => !defined.has(keyOf(e)));
 
@@ -293,7 +282,7 @@ for (const entry of candidates) {
 const removable = candidates.filter((e) => !hasHumanWork(e));
 const spared = candidates.filter(hasHumanWork);
 if (spared.length > 0) {
-  console.log(`${spared.length} candidat(s) écarté(s) : ils portent des commentaires ou des pièces jointes.\n`);
+  console.log(`${spared.length} candidat(s) écarté(s) : ils portent du travail — le détail est en regard.\n`);
   for (const entry of spared) describe(entry);
   console.log();
 }
