@@ -137,7 +137,20 @@ export default function ProjectTagsManager({ projectId, messages }: ProjectTagsM
   return (
     <Card>
       <CardBody>
-        <div className="mb-6 flex items-baseline gap-3">
+        {/* Ajouter une étiquette se fait au clavier : on tape un nom, on valide.
+            Le `form` ne couvre QUE ce champ et son bouton — la liste en dessous
+            porte des suppressions qu'une soumission ne doit jamais déclencher. */}
+        <form
+          className="mb-6 flex items-baseline gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!isProjectDeveloper || !isValidTag || !tagName) {
+              return;
+            }
+            onCreateTag();
+            setTagName('');
+          }}
+        >
           <Input
             size="sm"
             type="text"
@@ -156,19 +169,16 @@ export default function ProjectTagsManager({ projectId, messages }: ProjectTagsM
 
           <div>
             <Button
+              type="submit"
               startContent={<Plus className="w-4 h-4" />}
               color="primary"
               size="sm"
               isDisabled={!isProjectDeveloper || !isValidTag}
-              onPress={() => {
-                onCreateTag();
-                setTagName('');
-              }}
             >
               {messages.addTag}
             </Button>
           </div>
-        </div>
+        </form>
         <div className="space-y-1">
           {tags.length === 0 && <div className="text-center text-gray-500 mb-3">{messages.noTagsAvailable}</div>}
 

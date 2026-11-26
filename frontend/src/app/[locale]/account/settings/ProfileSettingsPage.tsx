@@ -310,7 +310,13 @@ export default function ProfileSettingsPage({ messages, locale: defaultLocale }:
           <h2 className="text-large font-semibold">{messages.changeUsername}</h2>
         </CardHeader>
         <CardBody>
-          <form>
+          <form
+            id="username-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleUsernameUpdate();
+            }}
+          >
             <div className="space-y-4">
               <Input
                 size="sm"
@@ -326,7 +332,8 @@ export default function ProfileSettingsPage({ messages, locale: defaultLocale }:
         <CardFooter className="flex justify-end">
           <Button
             color="primary"
-            onPress={handleUsernameUpdate}
+            type="submit"
+            form="username-form"
             isLoading={isUpdatingUsername}
             isDisabled={!username.trim()}
             size="sm"
@@ -342,7 +349,13 @@ export default function ProfileSettingsPage({ messages, locale: defaultLocale }:
           <h2 className="text-large font-semibold">{messages.changePassword}</h2>
         </CardHeader>
         <CardBody>
-          <form>
+          <form
+            id="password-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handlePasswordUpdate();
+            }}
+          >
             <div className="space-y-4">
               {/* hidden username field for accessibility */}
               <input
@@ -385,7 +398,8 @@ export default function ProfileSettingsPage({ messages, locale: defaultLocale }:
           <Button
             size="sm"
             color="primary"
-            onPress={handlePasswordUpdate}
+            type="submit"
+            form="password-form"
             isLoading={isUpdatingPassword}
             isDisabled={!currentPassword || !newPassword || !confirmPassword}
           >
@@ -401,7 +415,13 @@ export default function ProfileSettingsPage({ messages, locale: defaultLocale }:
           <h2 className="text-large font-semibold ml-2">{messages.changeLocale}</h2>
         </CardHeader>
         <CardBody>
-          <form>
+          <form
+            id="locale-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleLocaleUpdate();
+            }}
+          >
             <div className="space-y-4">
               <Select<LocaleType>
                 fullWidth
@@ -424,7 +444,8 @@ export default function ProfileSettingsPage({ messages, locale: defaultLocale }:
         <CardFooter className="flex justify-end">
           <Button
             color="primary"
-            onPress={handleLocaleUpdate}
+            type="submit"
+            form="locale-form"
             isLoading={isUpdatingLocale}
             isDisabled={locale === context.token?.user?.locale}
             size="sm"
@@ -440,6 +461,8 @@ export default function ProfileSettingsPage({ messages, locale: defaultLocale }:
           <h2 className="text-large font-semibold">{messages.changeAvatar}</h2>
         </CardHeader>
         <CardBody>
+          {/* L'avatar est un téléversement, pas une saisie : rien à soumettre
+              au clavier, le `form` n'est là que pour le champ fichier. */}
           <form>
             <div className="space-y-4">
               <div className="flex items-center gap-4">

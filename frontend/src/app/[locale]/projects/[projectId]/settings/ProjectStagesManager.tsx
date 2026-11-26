@@ -166,59 +166,69 @@ export default function ProjectStagesManager({ projectId, messages }: Props) {
 
     return (
       <Card shadow="none" className="border-medium border-primary">
-        <CardBody className="gap-3">
-          <Input
-            size="sm"
-            variant="bordered"
-            label={messages.stageTitle}
-            value={draft.title}
-            onValueChange={(value) => setDraft({ ...draft, title: value })}
-          />
-
-          {draft.kind === BRIEFING_KIND ? (
-            <Textarea
+        {/* Le `form` ne couvre que la carte du brouillon : la liste des étapes
+            porte des suppressions qu'une soumission ne doit jamais déclencher. */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmitDraft();
+          }}
+        >
+          <CardBody className="gap-3">
+            <Input
               size="sm"
               variant="bordered"
-              minRows={4}
-              label={messages.stageContent}
-              placeholder={messages.stageContentPlaceholder}
-              value={draft.content}
-              onValueChange={(value) => setDraft({ ...draft, content: value })}
+              label={messages.stageTitle}
+              value={draft.title}
+              onValueChange={(value) => setDraft({ ...draft, title: value })}
             />
-          ) : (
-            <Select
-              size="sm"
-              variant="bordered"
-              label={messages.pickRun}
-              selectedKeys={draft.runId ? [String(draft.runId)] : []}
-              onSelectionChange={(keys) => {
-                const picked = Array.from(keys)[0];
-                setDraft({ ...draft, runId: picked ? Number(picked) : null });
-              }}
-            >
-              {runs.map((run) => (
-                <SelectItem key={String(run.id)}>{run.name}</SelectItem>
-              ))}
-            </Select>
-          )}
 
-          <div className="flex justify-end gap-2">
-            <Button
-              size="sm"
-              variant="light"
-              startContent={<X size={16} />}
-              onPress={() => {
-                setDraft(null);
-                setEditingId(null);
-              }}
-            >
-              {messages.cancel}
-            </Button>
-            <Button size="sm" color="primary" startContent={<Check size={16} />} onPress={onSubmitDraft}>
-              {messages.save}
-            </Button>
-          </div>
-        </CardBody>
+            {draft.kind === BRIEFING_KIND ? (
+              <Textarea
+                size="sm"
+                variant="bordered"
+                minRows={4}
+                label={messages.stageContent}
+                placeholder={messages.stageContentPlaceholder}
+                value={draft.content}
+                onValueChange={(value) => setDraft({ ...draft, content: value })}
+              />
+            ) : (
+              <Select
+                size="sm"
+                variant="bordered"
+                label={messages.pickRun}
+                selectedKeys={draft.runId ? [String(draft.runId)] : []}
+                onSelectionChange={(keys) => {
+                  const picked = Array.from(keys)[0];
+                  setDraft({ ...draft, runId: picked ? Number(picked) : null });
+                }}
+              >
+                {runs.map((run) => (
+                  <SelectItem key={String(run.id)}>{run.name}</SelectItem>
+                ))}
+              </Select>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="light"
+                startContent={<X size={16} />}
+                onPress={() => {
+                  setDraft(null);
+                  setEditingId(null);
+                }}
+              >
+                {messages.cancel}
+              </Button>
+              <Button type="submit" size="sm" color="primary" startContent={<Check size={16} />}>
+                {messages.save}
+              </Button>
+            </div>
+          </CardBody>
+        </form>
       </Card>
     );
   };

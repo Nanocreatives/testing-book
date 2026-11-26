@@ -140,7 +140,16 @@ export default function InviteDialog({ isOpen, projectId, locale, messages, onCa
           {/* `flex-wrap` plutôt qu'un point de rupture : la modale rétrécit avec
               la fenêtre, et ce qui compte est la place restante, pas la taille
               de l'écran. */}
-          <div className="flex flex-wrap items-end gap-2">
+          {/* L'action de ce formulaire est d'AJOUTER une adresse, pas de fermer
+              la modale : Entrée dans le champ doit faire ce que fait le bouton
+              voisin, et rien d'autre. */}
+          <form
+            className="flex flex-wrap items-end gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              onCreate();
+            }}
+          >
             <Input
               size="sm"
               variant="bordered"
@@ -156,12 +165,12 @@ export default function InviteDialog({ isOpen, projectId, locale, messages, onCa
               color="primary"
               className="w-full shrink-0 sm:w-auto"
               startContent={<Plus size={16} />}
+              type="submit"
               isLoading={isCreating}
-              onPress={onCreate}
             >
               {messages.create}
             </Button>
-          </div>
+          </form>
 
           <p className="mt-2 font-bold">{messages.pending}</p>
           {invitations.length === 0 && <p className="text-small text-default-600">{messages.noPending}</p>}

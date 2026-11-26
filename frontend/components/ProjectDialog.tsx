@@ -103,59 +103,70 @@ export default function ProjectDialog({ isOpen, editingProject, onCancel, onSubm
       }}
     >
       <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">{projectDialogMessages.project}</ModalHeader>
-        <ModalBody>
-          <Input
-            type="text"
-            label={projectDialogMessages.projectName}
-            value={projectName.text}
-            isInvalid={projectName.isInvalid}
-            errorMessage={projectName.errorMessage}
-            onChange={(e) => {
-              setProjectName({
-                ...projectName,
-                text: e.target.value,
-              });
-            }}
-          />
-          <Textarea
-            label={projectDialogMessages.projectDetail}
-            value={projectDetail.text}
-            isInvalid={projectDetail.isInvalid}
-            errorMessage={projectDetail.errorMessage}
-            onChange={(e) => {
-              setProjectDetail({
-                ...projectDetail,
-                text: e.target.value,
-              });
-            }}
-          />
-          <Input
-            type="url"
-            inputMode="url"
-            label={projectDialogMessages.testUrl}
-            placeholder="https://staging.exemple.com"
-            description={projectDialogMessages.testUrlHint}
-            value={testUrl.text}
-            isInvalid={testUrl.isInvalid}
-            errorMessage={testUrl.errorMessage}
-            onChange={(e) => {
-              setTestUrl({ text: e.target.value, isInvalid: false, errorMessage: '' });
-            }}
-          />
-          <Checkbox isSelected={isProjectPublic} onValueChange={setIsProjectPublic}>
-            {projectDialogMessages.public}
-          </Checkbox>
-          <div className="text-small text-default-500">{projectDialogMessages.ifYouMakePublic}</div>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="light" onPress={onCancel}>
-            {projectDialogMessages.close}
-          </Button>
-          <Button color="primary" onPress={validate}>
-            {editingProject ? projectDialogMessages.update : projectDialogMessages.create}
-          </Button>
-        </ModalFooter>
+        {/* Un vrai `form` : sans lui, la touche Entrée ne soumet rien, et il
+            faut viser le bouton à la souris pour valider trois champs. */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            validate();
+          }}
+        >
+          <ModalHeader className="flex flex-col gap-1">{projectDialogMessages.project}</ModalHeader>
+          <ModalBody>
+            <Input
+              type="text"
+              label={projectDialogMessages.projectName}
+              value={projectName.text}
+              isInvalid={projectName.isInvalid}
+              errorMessage={projectName.errorMessage}
+              onChange={(e) => {
+                setProjectName({
+                  ...projectName,
+                  text: e.target.value,
+                });
+              }}
+            />
+            <Textarea
+              label={projectDialogMessages.projectDetail}
+              value={projectDetail.text}
+              isInvalid={projectDetail.isInvalid}
+              errorMessage={projectDetail.errorMessage}
+              onChange={(e) => {
+                setProjectDetail({
+                  ...projectDetail,
+                  text: e.target.value,
+                });
+              }}
+            />
+            <Input
+              type="url"
+              inputMode="url"
+              label={projectDialogMessages.testUrl}
+              placeholder="https://staging.exemple.com"
+              description={projectDialogMessages.testUrlHint}
+              value={testUrl.text}
+              isInvalid={testUrl.isInvalid}
+              errorMessage={testUrl.errorMessage}
+              onChange={(e) => {
+                setTestUrl({ text: e.target.value, isInvalid: false, errorMessage: '' });
+              }}
+            />
+            <Checkbox isSelected={isProjectPublic} onValueChange={setIsProjectPublic}>
+              {projectDialogMessages.public}
+            </Checkbox>
+            <div className="text-small text-default-500">{projectDialogMessages.ifYouMakePublic}</div>
+          </ModalBody>
+          <ModalFooter>
+            {/* `type="button"` explicite : dans un formulaire, un bouton sans
+                type soumet, et « Fermer » enverrait le formulaire. */}
+            <Button type="button" variant="light" onPress={onCancel}>
+              {projectDialogMessages.close}
+            </Button>
+            <Button type="submit" color="primary">
+              {editingProject ? projectDialogMessages.update : projectDialogMessages.create}
+            </Button>
+          </ModalFooter>
+        </form>
       </ModalContent>
     </Modal>
   );
