@@ -18,6 +18,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createRequire } from 'node:module';
+import { MANAGED_TAG_NAMES, tagNamesForMarkers } from './lib/markerTags.mjs';
 
 // `xlsx` vit dans les dépendances du backend : la route d'import groupé ne
 // prend qu'un classeur, et c'est elle qui rend cet import possible sous la
@@ -184,7 +185,18 @@ if (orphelines.length > 0) {
   );
   process.exit(1);
 }
-const stats = { folders: 0, cases: 0, updated: 0, inchanges: 0, runs: 0, runCases: 0, kept: 0, roles: 0, avis: 0 };
+const stats = {
+  folders: 0,
+  cases: 0,
+  updated: 0,
+  inchanges: 0,
+  runs: 0,
+  runCases: 0,
+  kept: 0,
+  roles: 0,
+  avis: 0,
+  etiquettes: 0,
+};
 
 const log = (s) => process.stdout.write(s);
 
@@ -567,6 +579,68 @@ for (const [verdictsExpected, ids] of parObjectif) {
 stats.avis = avisAlignes;
 log(avisAlignes ? ` ${avisAlignes} objectif(s) d'avis alignés sur les plans\n` : " objectifs d'avis déjà conformes\n");
 
+// Les marqueurs des plans, rendus filtrables dans l'instance.
+//
+// L'import ne possède que ce vocabulaire-là. Une étiquette posée par une
+// personne — « Défaut connu », « Bloqué — donnée » — n'est jamais retirée, et
+// c'est à cette distinction que le nettoyage reconnaît un cas à épargner.
+log('Étiq.    ');
+const tagsExistants = await api('GET', '/tags', { query: { projectId: project.id } });
+const tagIdParNom = new Map((Array.isArray(tagsExistants) ? tagsExistants : []).map((t) => [t.name, t.id]));
+for (const name of MANAGED_TAG_NAMES) {
+  if (!tagIdParNom.has(name)) {
+    const cree = await api('POST', '/tags', { query: { projectId: project.id }, body: { name } });
+    tagIdParNom.set(name, cree.id);
+  }
+}
+const idsGeres = MANAGED_TAG_NAMES.map((name) => tagIdParNom.get(name));
+
+const etiquettesActuelles = new Map(
+  (Array.isArray(casFinaux) ? casFinaux : []).map((c) => [c.id, (c.Tags ?? []).map((t) => t.id)])
+);
+
+// Un appel par jeu d'étiquettes voulu, pas un par cas : l'API plafonne à mille
+// requêtes par heure et le projet en compte plus de mille.
+const parJeu = new Map();
+for (const c of payload.cases) {
+  const id = caseIdByRef.get(`${c.plan}/${c.ref}`);
+  if (!id) {
+    continue;
+  }
+  const voulus = tagNamesForMarkers(c.markers).map((name) => tagIdParNom.get(name));
+  const tenus = (etiquettesActuelles.get(id) ?? []).filter((tagId) => idsGeres.includes(tagId));
+  const conforme = voulus.length === tenus.length && voulus.every((tagId) => tenus.includes(tagId));
+  if (conforme) {
+    continue;
+  }
+  const cle = voulus.join(',');
+  if (!parJeu.has(cle)) {
+    parJeu.set(cle, { addTagIds: voulus, removeTagIds: idsGeres.filter((tagId) => !voulus.includes(tagId)), ids: [] });
+  }
+  parJeu.get(cle).ids.push(id);
+}
+
+let etiquettesAlignees = 0;
+let etiquettesEcartees = 0;
+for (const { addTagIds, removeTagIds, ids } of parJeu.values()) {
+  for (let i = 0; i < ids.length; i += PAQUET) {
+    const lot = ids.slice(i, i + PAQUET);
+    const resultat = await api('PUT', '/cases/tags', {
+      query: { projectId: project.id },
+      body: { caseIds: lot, addTagIds, removeTagIds },
+    });
+    etiquettesAlignees += lot.length - (resultat?.skipped ?? 0);
+    etiquettesEcartees += resultat?.skipped ?? 0;
+  }
+}
+stats.etiquettes = etiquettesAlignees;
+log(etiquettesAlignees ? ` ${etiquettesAlignees} cas étiquetés d'après les plans\n` : ' étiquettes déjà conformes\n');
+// Un cas déjà porteur de cinq étiquettes humaines n'a plus de place : il est
+// laissé tel quel plutôt que d'en perdre une.
+if (etiquettesEcartees > 0) {
+  log(`         ${etiquettesEcartees} cas écarté(s) : cinq étiquettes déjà posées, plus de place\n`);
+}
+
 // Rattachement des cas aux campagnes
 log('Rattach. ');
 for (const [wave, run] of runParVague) {
@@ -599,6 +673,7 @@ console.log(`  cas créés         ${stats.cases}`);
 console.log(`  cas mis à jour    ${stats.updated}`);
 console.log(`  rôles alignés     ${stats.roles ?? 0}`);
 console.log(`  objectifs d'avis  ${stats.avis ?? 0}`);
+console.log(`  cas étiquetés     ${stats.etiquettes ?? 0}`);
 console.log(`  cas en double     ${stats.doublons ?? 0}`);
 console.log(`  joués & modifiés  ${stats.joues ?? 0}`);
 console.log(`  cas inchangés     ${stats.inchanges}`);
